@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+{% block title %}Search – BuyMe{% endblock %}
+{% block content %}
+
+<div class="row">
+  <div class="col-md-3">
+    <h6 class="fw-bold">Filter</h6>
+    <form action="{{ url_for('search') }}" method="get">
+      <input type="hidden" name="q" value="{{ q }}">
+      <div class="mb-3">
+        <label class="form-label small">Category</label>
+        <select name="category" class="form-select form-select-sm">
+          <option value="">All categories</option>
+          {% for cat in categories %}
+            <option value="{{ cat.category_id }}" {% if cat_id == cat.category_id %}selected{% endif %}>{{ cat.name }}</option>
+            {% for sub in cat.children %}
+            <option value="{{ sub.category_id }}" {% if cat_id == sub.category_id %}selected{% endif %}>&nbsp;&nbsp;{{ sub.name }}</option>
+              {% for subsub in sub.children %}
+              <option value="{{ subsub.category_id }}" {% if cat_id == subsub.category_id %}selected{% endif %}>&nbsp;&nbsp;&nbsp;&nbsp;{{ subsub.name }}</option>
+              {% endfor %}
+            {% endfor %}
+          {% endfor %}
+        </select>
+      </div>
+      {% if search_attributes %}
+      <div class="border-top pt-3 mb-3">
+        <div class="small fw-bold mb-2">Item details</div>
+        {% for attr in search_attributes %}
+        <div class="mb-2">
+          <label class="form-label small text-capitalize">{{ attr.replace('_', ' ') }}</label>
+          <input type="text" name="attr_{{ attr }}" class="form-control form-control-sm"
+                 value="{{ attr_filters.get(attr, '') }}">
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+      <div class="mb-2">
+        <label class="form-label small">Min price ($)</label>
+        <input type="number" name="min_price" class="form-control form-control-sm" step="0.01"
+               value="{{ request.args.get('min_price', '') }}">
+      </div>
+      <div class="mb-3">
+        <label class="form-label small">Max price ($)</label>
+        <input type="number" name="max_price" class="form-control form-control-sm" step="0.01"
+               value="{{ request.args.get('max_price', '') }}">
+      </div>
+      <div class="mb-3">
+        <label class="form-label small">Sort by</label>
+        <select name="sort" class="form-select form-select-sm">
+          <option value="end_asc" {% if sort == 'end_asc' %}selected{% endif %}>Ending soonest</option>
+          <option value="price_asc" {% if sort == 'price_asc' %}selected{% endif %}>Price: low to high</option>
+          <option value="price_desc" {% if sort == 'price_desc' %}selected{% endif %}>Price: high to low</option>
+          <option value="newest" {% if sort == 'newest' %}selected{% endif %}>Newest</option>
+        </select>
+      </div>
+      <button type="submit" class="btn btn-primary btn-sm w-100">Apply</button>
+    </form>
+  </div>
+
+  <div class="col-md-9">
+    <h4 class="fw-bold mb-1">
+      {% if q %}Results for "{{ q }}"{% else %}All listings{% endif %}
+    </h4>
+    <p class="text-muted">{{ items|length }} item(s) found</p>
+
+    <div class="row row-cols-1 row-cols-md-3 g-3">
+      {% for item in items %}
+      <div class="col">
+        <div class="card h-100 shadow-sm">
+          {% if item.image_url %}
+          <img src="{{ item.image_url }}" class="card-img-top" alt="{{ item.title }}"
+               style="height:150px;object-fit:cover;">
+          {% endif %}
+          <div class="card-body">
+            <span class="badge bg-secondary mb-1">{{ item.category.name }}</span>
+            <h6 class="card-title">
+              <a href="{{ url_for('item_detail', item_id=item.item_id) }}" class="text-decoration-none text-dark">{{ item.title }}</a>
+            </h6>
+            <div class="d-flex justify-content-between align-items-center">
+              <span class="fw-bold text-primary">${{ "%.2f"|format(item.display_price) }}</span>
+              <span class="text-muted small">{{ item.bids|length }} bid(s)</span>
+            </div>
+          </div>
+          <div class="card-footer d-flex justify-content-between">
+            <small class="text-muted">Ends {{ item.end_time.strftime('%b %d %H:%M') }}</small>
+            <a href="{{ url_for('item_detail', item_id=item.item_id) }}" class="btn btn-primary btn-sm">Bid</a>
+          </div>
+        </div>
+      </div>
+      {% else %}
+      <div class="col-12"><p class="text-muted">No items found.</p></div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

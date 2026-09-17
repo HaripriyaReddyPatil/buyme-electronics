@@ -1,0 +1,127 @@
+{% extends 'base.html' %}
+{% block title %}List an Item – BuyMe{% endblock %}
+{% block content %}
+
+<div class="row justify-content-center">
+  <div class="col-md-8">
+    <h2 class="fw-bold mb-4">List an Item for Auction</h2>
+
+    <form action="{{ url_for('new_item') }}" method="post" id="listingForm">
+
+      <div class="mb-3">
+        <label class="form-label fw-bold">Title</label>
+        <input type="text" name="title" class="form-control" required maxlength="200"
+               placeholder="e.g. Apple MacBook Pro 14-inch M3">
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label fw-bold">Description</label>
+        <textarea name="description" class="form-control" rows="4"
+                  placeholder="Describe your item…"></textarea>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label fw-bold">Image URL <span class="text-muted fw-normal">(optional)</span></label>
+        <input type="url" name="image_url" class="form-control"
+               placeholder="https://example.com/photo.jpg">
+        <div class="form-text">Paste a direct link to an image (JPEG, PNG, WebP).</div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label fw-bold">Category</label>
+        <select name="category_id" class="form-select" id="categorySelect" required>
+          <option value="">— Select a category —</option>
+          {% for cat in categories %}
+            {% if not cat.parent_id %}
+            <optgroup label="{{ cat.name }}">
+              {% for sub in cat.children %}
+                {% if sub.attributes %}
+                <option value="{{ sub.category_id }}">{{ sub.name }}</option>
+                {% endif %}
+                {% for subsub in sub.children %}
+                {% if subsub.attributes %}
+                <option value="{{ subsub.category_id }}">&nbsp;&nbsp;{{ subsub.name }}</option>
+                {% endif %}
+                {% endfor %}
+              {% endfor %}
+            </optgroup>
+            {% endif %}
+          {% endfor %}
+        </select>
+      </div>
+
+      <div id="categoryAttrs" class="mb-3" style="display:none">
+        <h6 class="fw-bold">Category-specific details</h6>
+        <div id="attrFields"></div>
+      </div>
+
+      <div class="row g-3 mb-3">
+        <div class="col-md-4">
+          <label class="form-label fw-bold">Starting price ($)</label>
+          <input type="number" name="start_price" class="form-control" step="0.01" min="0.01" required>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label fw-bold">Reserve price ($) <span class="text-muted fw-normal">(secret)</span></label>
+          <input type="number" name="min_price" class="form-control" step="0.01" min="0.01" required>
+          <div class="form-text">Minimum amount you'll accept. Not shown to buyers.</div>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label fw-bold">Bid increment ($)</label>
+          <input type="number" name="bid_increment" class="form-control" step="0.01" min="0.01" value="1.00" required>
+        </div>
+      </div>
+
+      <div class="row g-3 mb-4">
+        <div class="col-md-7">
+          <label class="form-label fw-bold">Auction end date and time</label>
+          <input type="datetime-local" name="end_time" class="form-control">
+        </div>
+        <div class="col-md-5">
+          <label class="form-label fw-bold">Quick duration</label>
+          <select name="duration_hours" class="form-select">
+            <option value="1">1 hour</option>
+            <option value="6">6 hours</option>
+            <option value="24" selected>1 day</option>
+            <option value="72">3 days</option>
+            <option value="168">7 days</option>
+          </select>
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-lg">List Item</button>
+      <a href="{{ url_for('index') }}" class="btn btn-outline-secondary btn-lg ms-2">Cancel</a>
+    </form>
+  </div>
+</div>
+
+{% endblock %}
+{% block scripts %}
+<script>
+document.getElementById('categorySelect').addEventListener('change', function() {
+  const catId = this.value;
+  const attrsDiv = document.getElementById('categoryAttrs');
+  const fieldsDiv = document.getElementById('attrFields');
+
+  if (!catId) { attrsDiv.style.display = 'none'; return; }
+
+  fetch(`/api/categories/${catId}/attributes`)
+    .then(r => r.json())
+    .then(data => {
+      fieldsDiv.innerHTML = '';
+      if (data.attributes && data.attributes.length > 0) {
+        data.attributes.forEach(attr => {
+          const label = attr.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+          fieldsDiv.innerHTML += `
+            <div class="mb-2">
+              <label class="form-label">${label}</label>
+              <input type="text" name="attr_${attr}" class="form-control" placeholder="${label}" required>
+            </div>`;
+        });
+        attrsDiv.style.display = 'block';
+      } else {
+        attrsDiv.style.display = 'none';
+      }
+    });
+});
+</script>
+{% endblock %}

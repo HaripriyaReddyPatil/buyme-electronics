@@ -1,0 +1,196 @@
+{% extends 'base.html' %}
+{% block title %}Admin Dashboard – BuyMe{% endblock %}
+{% block content %}
+
+<h2 class="fw-bold mb-4">Admin Dashboard</h2>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-3">
+    <div class="card text-center shadow-sm">
+      <div class="card-body">
+        <div class="fs-2 fw-bold text-primary">${{ "%.2f"|format(total_earnings) }}</div>
+        <div class="text-muted">Total earnings</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4 mb-5">
+  <div class="col-md-6">
+    <h5 class="fw-bold">Earnings by category</h5>
+    <table class="table table-sm table-striped">
+      <thead><tr><th>Category</th><th>Earnings</th></tr></thead>
+      <tbody>
+        {% for name, total in earnings_by_cat %}
+        <tr><td>{{ name }}</td><td>${{ "%.2f"|format(total or 0) }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="col-md-6">
+    <h5 class="fw-bold">Best selling users</h5>
+    <table class="table table-sm table-striped">
+      <thead><tr><th>Username</th><th>Total sold</th></tr></thead>
+      <tbody>
+        {% for username, total in best_sellers %}
+        <tr><td>{{ username }}</td><td>${{ "%.2f"|format(total or 0) }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="col-md-6">
+    <h5 class="fw-bold">Earnings per end-user</h5>
+    <table class="table table-sm table-striped">
+      <thead><tr><th>Seller</th><th>Earnings</th></tr></thead>
+      <tbody>
+        {% for username, total in earnings_by_user %}
+        <tr><td>{{ username }}</td><td>${{ "%.2f"|format(total or 0) }}</td></tr>
+        {% else %}
+        <tr><td colspan="2" class="text-muted">No seller earnings yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="col-md-6">
+    <h5 class="fw-bold">Best buying users</h5>
+    <table class="table table-sm table-striped">
+      <thead><tr><th>Buyer</th><th>Completed wins</th></tr></thead>
+      <tbody>
+        {% for username, wins in best_buyers %}
+        <tr><td>{{ username }}</td><td>{{ wins }}</td></tr>
+        {% else %}
+        <tr><td colspan="2" class="text-muted">No winning buyers yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="col-md-6">
+    <h5 class="fw-bold">Earnings per item (recent)</h5>
+    <table class="table table-sm table-striped">
+      <thead><tr><th>Item</th><th>Sale Price</th><th>Closed</th></tr></thead>
+      <tbody>
+        {% for title, price, closed_at in earnings_per_item %}
+        <tr>
+          <td>{{ title[:40] }}{% if title|length > 40 %}…{% endif %}</td>
+          <td>${{ "%.2f"|format(price or 0) }}</td>
+          <td>{{ closed_at.strftime('%b %d %Y') }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="3" class="text-muted">No completed auctions yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="col-md-6">
+    <h5 class="fw-bold">Best selling items</h5>
+    <table class="table table-sm table-striped">
+      <thead><tr><th>Item</th><th>Final price</th></tr></thead>
+      <tbody>
+        {% for title, price in best_items %}
+        <tr><td>{{ title }}</td><td>${{ "%.2f"|format(price or 0) }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<hr>
+<h5 class="fw-bold mb-3">Item types</h5>
+<div class="row g-4 mb-5">
+  <div class="col-md-5">
+    <h6>Create item type</h6>
+    <form action="{{ url_for('admin_create_category') }}" method="post" class="mb-4">
+      <div class="mb-2">
+        <input type="text" name="name" class="form-control" placeholder="Name, e.g. Tablets" required>
+      </div>
+      <div class="mb-2">
+        <select name="parent_id" class="form-select">
+          <option value="">No parent</option>
+          {% for cat in categories %}
+          <option value="{{ cat.category_id }}">{{ cat.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="mb-2">
+        <input type="text" name="description" class="form-control" placeholder="Description">
+      </div>
+      <div class="mb-2">
+        <input type="text" name="attributes" class="form-control"
+               placeholder="Required fields, comma separated: brand, model, screen_size">
+      </div>
+      <button type="submit" class="btn btn-primary">Create Item Type</button>
+    </form>
+  </div>
+  <div class="col-md-7">
+    <h6>Current item types and required fields</h6>
+    <table class="table table-sm">
+      <thead class="table-light"><tr><th>Name</th><th>Parent</th><th>Required fields</th><th>Update</th></tr></thead>
+      <tbody>
+        {% for cat in categories %}
+        <tr>
+          <td>{{ cat.name }}</td>
+          <td>{{ cat.parent.name if cat.parent else '-' }}</td>
+          <td>
+            <form action="{{ url_for('admin_update_category', category_id=cat.category_id) }}" method="post" class="d-flex gap-2">
+              <input type="hidden" name="description" value="{{ cat.description or '' }}">
+              <input type="text" name="attributes" class="form-control form-control-sm"
+                     value="{{ (cat.attributes or []) | join(', ') }}">
+          </td>
+          <td>
+              <button type="submit" class="btn btn-outline-primary btn-sm">Save</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<hr>
+<h5 class="fw-bold mb-3">Customer representatives</h5>
+<div class="row">
+  <div class="col-md-5">
+    <h6>Create new rep</h6>
+    <form action="{{ url_for('admin_create_rep') }}" method="post" class="mb-4">
+      <div class="mb-2">
+        <input type="text" name="username" class="form-control" placeholder="Username" required>
+      </div>
+      <div class="mb-2">
+        <input type="email" name="email" class="form-control" placeholder="Email" required>
+      </div>
+      <div class="mb-2">
+        <input type="password" name="password" class="form-control" placeholder="Password" required>
+      </div>
+      <button type="submit" class="btn btn-primary">Create Rep Account</button>
+    </form>
+  </div>
+  <div class="col-md-7">
+    <h6>Current reps</h6>
+    {% if reps %}
+    <table class="table table-sm">
+      <thead class="table-light"><tr><th>Username</th><th>Email</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+        {% for rep in reps %}
+        <tr>
+          <td>{{ rep.username }}</td>
+          <td>{{ rep.email }}</td>
+          <td>{% if rep.is_active %}<span class="badge bg-success">Active</span>{% else %}<span class="badge bg-secondary">Inactive</span>{% endif %}</td>
+          <td>
+            {% if rep.is_active %}
+            <form action="{{ url_for('admin_deactivate_rep', user_id=rep.user_id) }}" method="post">
+              <button type="submit" class="btn btn-outline-danger btn-sm"
+                      onclick="return confirm('Deactivate this rep?')">Deactivate</button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="text-muted">No reps yet.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

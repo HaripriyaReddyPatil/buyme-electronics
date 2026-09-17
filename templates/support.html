@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+{% block title %}Support - BuyMe{% endblock %}
+{% block content %}
+
+<h2 class="fw-bold mb-1">Customer Support</h2>
+<p class="text-muted">Ask a customer representative for help with accounts, bids, listings, or auction questions.</p>
+
+<div class="row g-4">
+  <div class="col-md-5">
+    <h5 class="fw-bold">New question</h5>
+    <form action="{{ url_for('new_support_question') }}" method="post">
+      <div class="mb-2">
+        <input type="text" name="subject" class="form-control" maxlength="160" placeholder="Subject" required>
+      </div>
+      <div class="mb-3">
+        <textarea name="question" class="form-control" rows="5" placeholder="What do you need help with?" required></textarea>
+      </div>
+      <button type="submit" class="btn btn-primary">Send to Support</button>
+    </form>
+  </div>
+
+  <div class="col-md-7">
+    <h5 class="fw-bold">My questions</h5>
+    {% if my_questions %}
+    <div class="list-group">
+      {% for q in my_questions %}
+      <div class="list-group-item">
+        <div class="d-flex justify-content-between">
+          <strong>{{ q.subject }}</strong>
+          <span class="badge {% if q.status == 'answered' %}bg-success{% else %}bg-warning text-dark{% endif %}">
+            {{ q.status }}
+          </span>
+        </div>
+        <p class="mb-2 mt-2">{{ q.question }}</p>
+        {% if q.answer %}
+        <div class="border-start border-3 ps-3 small">
+          <strong>Support answer:</strong> {{ q.answer }}
+        </div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-muted">No questions yet.</p>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}

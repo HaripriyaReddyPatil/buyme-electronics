@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+{% block title %}BuyMe – Live Auctions{% endblock %}
+{% block content %}
+
+<div class="row mb-4">
+  <div class="col">
+    <h2 class="fw-bold">Live Auctions</h2>
+    <p class="text-muted">Browse and bid on the latest electronics listings.</p>
+  </div>
+</div>
+
+<div class="row mb-3">
+  {% for cat in categories %}
+  <div class="col-auto">
+    <a href="{{ url_for('search', category=cat.category_id) }}"
+       class="btn btn-outline-primary btn-sm mb-2">{{ cat.name }}</a>
+    {% for sub in cat.children %}
+      <a href="{{ url_for('search', category=sub.category_id) }}"
+         class="btn btn-outline-secondary btn-sm mb-2 ms-1">{{ sub.name }}</a>
+    {% endfor %}
+  </div>
+  {% endfor %}
+</div>
+
+<div class="row row-cols-1 row-cols-md-3 g-4">
+  {% for item in items %}
+  <div class="col">
+    <div class="card h-100 shadow-sm">
+      {% if item.image_url %}
+      <img src="{{ item.image_url }}" class="card-img-top" alt="{{ item.title }}"
+           style="height:180px;object-fit:cover;">
+      {% else %}
+      <div class="bg-light d-flex align-items-center justify-content-center"
+           style="height:180px;color:#aaa;font-size:2rem;">📦</div>
+      {% endif %}
+      <div class="card-body">
+        <span class="badge bg-secondary mb-1">{{ item.category.name }}</span>
+        <h5 class="card-title">
+          <a href="{{ url_for('item_detail', item_id=item.item_id) }}" class="text-decoration-none text-dark">
+            {{ item.title }}
+          </a>
+        </h5>
+        <p class="card-text text-muted small">{{ item.description[:100] }}{% if item.description|length > 100 %}…{% endif %}</p>
+        <div class="d-flex justify-content-between align-items-center">
+          <span class="fs-5 fw-bold text-primary">${{ "%.2f"|format(item.display_price) }}</span>
+          <span class="text-muted small">{{ item.bids|length }} bid(s)</span>
+        </div>
+      </div>
+      <div class="card-footer d-flex justify-content-between align-items-center">
+        <small class="text-muted">Ends {{ item.end_time.strftime('%b %d, %H:%M') }}</small>
+        <a href="{{ url_for('item_detail', item_id=item.item_id) }}" class="btn btn-primary btn-sm">Bid Now</a>
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <div class="col-12">
+    <p class="text-muted">No active auctions right now. <a href="{{ url_for('new_item') }}">List something!</a></p>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

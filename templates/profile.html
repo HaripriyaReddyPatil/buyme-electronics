@@ -1,0 +1,263 @@
+{% extends 'base.html' %}
+{% block title %}My Profile – BuyMe{% endblock %}
+{% block content %}
+
+<h2 class="fw-bold mb-1">{{ user.username }}</h2>
+<p class="text-muted">{{ user.email }} &nbsp;|&nbsp; Member since {{ user.created_at.strftime('%b %Y') }}</p>
+
+<ul class="nav nav-tabs mb-4" id="profileTab">
+  <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#myListings">My Listings</a></li>
+  <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#myBids">My Bids</a></li>
+  <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#myAlerts">Alerts</a></li>
+  <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#support">Support</a></li>
+  <li class="nav-item">
+    <a class="nav-link" data-bs-toggle="tab" href="#myNotifications">
+      Notifications
+      {% set unread = my_notifications | selectattr('is_read', 'equalto', false) | list %}
+      {% if unread %}<span class="badge bg-danger ms-1">{{ unread|length }}</span>{% endif %}
+    </a>
+  </li>
+  <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#settings">Settings</a></li>
+</ul>
+
+<div class="tab-content">
+
+  <div class="tab-pane fade show active" id="myListings">
+    <a href="{{ url_for('new_item') }}" class="btn btn-primary btn-sm mb-3">+ List a new item</a>
+    {% if my_items %}
+    <table class="table table-hover">
+      <thead class="table-light"><tr><th>Title</th><th>Category</th><th>Price</th><th>Bids</th><th>Status</th><th>Ends</th></tr></thead>
+      <tbody>
+        {% for item in my_items %}
+        <tr>
+          <td><a href="{{ url_for('item_detail', item_id=item.item_id) }}">{{ item.title }}</a></td>
+          <td>{{ item.category.name }}</td>
+          <td>${{ "%.2f"|format(item.display_price) }}</td>
+          <td>{{ item.bids|length }}</td>
+          <td><span class="badge bg-{% if item.status == 'active' %}success{% elif item.status == 'closed' %}secondary{% else %}danger{% endif %}">{{ item.status }}</span></td>
+          <td>{{ item.end_time.strftime('%b %d %H:%M') }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="text-muted">No listings yet.</p>
+    {% endif %}
+  </div>
+
+  <div class="tab-pane fade" id="myBids">
+    {% if my_bids %}
+    <table class="table table-hover">
+      <thead class="table-light"><tr><th>Item</th><th>Your Bid</th><th>Type</th><th>Placed</th><th>Status</th></tr></thead>
+      <tbody>
+        {% for bid in my_bids %}
+        <tr>
+          <td><a href="{{ url_for('item_detail', item_id=bid.item_id) }}">{{ bid.item.title }}</a></td>
+          <td>${{ "%.2f"|format(bid.amount) }}</td>
+          <td>{% if bid.is_auto %}<span class="badge bg-info text-dark">auto</span>{% else %}manual{% endif %}</td>
+          <td>{{ bid.placed_at.strftime('%b %d %H:%M') }}</td>
+          <td>
+            {% if bid.item.status == 'active' %}
+              {% if bid.item.top_bid and bid.item.top_bid.bidder_id == user.user_id %}
+                <span class="badge bg-success">Winning</span>
+              {% else %}
+                <span class="badge bg-warning text-dark">Outbid</span>
+              {% endif %}
+            {% elif bid.item.status == 'closed' %}
+              {% if bid.item.result and bid.item.result.winner_id == user.user_id %}
+                <span class="badge bg-primary">Won</span>
+              {% else %}
+                <span class="badge bg-secondary">Closed</span>
+              {% endif %}
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="text-muted">No bids placed yet.</p>
+    {% endif %}
+  </div>
+
+  <div class="tab-pane fade" id="myAlerts">
+    <h6 class="fw-bold">Set a new alert</h6>
+    <form action="{{ url_for('new_alert') }}" method="post" class="row g-2 mb-4">
+      <div class="col-md-4">
+        <input type="text" name="keywords" class="form-control" placeholder="Keywords (e.g. iPhone 15)">
+      </div>
+      <div class="col-md-4">
+        <select name="category_id" id="alertCategorySelect" class="form-select">
+          <option value="">All categories</option>
+          {% for cat in categories %}
+            {% if not cat.parent_id %}
+            <option value="{{ cat.category_id }}">{{ cat.name }}</option>
+              {% for sub in cat.children %}
+              <option value="{{ sub.category_id }}">&nbsp;&nbsp;{{ sub.name }}</option>
+                {% for subsub in sub.children %}
+                <option value="{{ subsub.category_id }}">&nbsp;&nbsp;&nbsp;&nbsp;{{ subsub.name }}</option>
+                {% endfor %}
+              {% endfor %}
+            {% endif %}
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-4">
+        <button type="submit" class="btn btn-outline-primary">Add Alert</button>
+      </div>
+      <div class="col-12" id="alertAttrFields"></div>
+    </form>
+    {% if my_alerts %}
+    <table class="table table-sm">
+      <thead class="table-light"><tr><th>Keywords</th><th>Category</th><th>Filters</th><th>Matched Items</th><th>Created</th><th></th></tr></thead>
+      <tbody>
+        {% for alert in my_alerts %}
+        <tr>
+          <td>{{ alert.keywords or '—' }}</td>
+          <td>{{ alert.category.name if alert.category else '—' }}</td>
+          <td>
+            {% set filters = (alert.attr_filters or {}).get('filters', {}) %}
+            {% if filters %}
+              {% for name, value in filters.items() %}
+              <span class="badge bg-secondary me-1">{{ name.replace('_', ' ') }}: {{ value }}</span>
+              {% endfor %}
+            {% else %}
+              <span class="text-muted small">-</span>
+            {% endif %}
+          </td>
+          <td>
+            {% set hits = (alert.attr_filters or {}).get('hits', []) %}
+            {% if hits %}
+              {% for hit in hits[-3:] %}
+                <a href="{{ url_for('item_detail', item_id=hit.item_id) }}" class="badge bg-info text-dark text-decoration-none me-1">
+                  {{ hit.title[:30] }}{% if hit.title|length > 30 %}…{% endif %}
+                </a>
+              {% endfor %}
+              {% if hits|length > 3 %}<span class="text-muted small">+{{ hits|length - 3 }} more</span>{% endif %}
+            {% else %}
+              <span class="text-muted small">No matches yet</span>
+            {% endif %}
+          </td>
+          <td>{{ alert.created_at.strftime('%b %d') }}</td>
+          <td>
+            <form action="{{ url_for('delete_alert', alert_id=alert.alert_id) }}" method="post">
+              <button type="submit" class="btn btn-link btn-sm text-danger p-0">Remove</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="text-muted">No alerts set.</p>
+    {% endif %}
+  </div>
+
+  <div class="tab-pane fade" id="myNotifications">
+    {% if my_notifications %}
+    <form action="{{ url_for('mark_notifications_read') }}" method="post" class="mb-3">
+      <button type="submit" class="btn btn-outline-secondary btn-sm">Mark all as read</button>
+    </form>
+    <div class="list-group">
+      {% for notif in my_notifications %}
+      <div class="list-group-item {% if not notif.is_read %}list-group-item-warning{% endif %}">
+        <div class="d-flex justify-content-between">
+          <span>{{ notif.message }}</span>
+          <small class="text-muted ms-3 text-nowrap">{{ notif.created_at.strftime('%b %d %H:%M') }}</small>
+        </div>
+        <a href="{{ url_for('item_detail', item_id=notif.item_id) }}" class="small text-primary">View item →</a>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-muted">No notifications yet.</p>
+    {% endif %}
+  </div>
+
+  <div class="tab-pane fade" id="support">
+    <h6 class="fw-bold">Ask customer support</h6>
+    <form action="{{ url_for('new_support_question') }}" method="post" class="mb-4">
+      <div class="mb-2">
+        <input type="text" name="subject" class="form-control" maxlength="160" placeholder="Subject" required>
+      </div>
+      <div class="mb-2">
+        <textarea name="question" class="form-control" rows="3" placeholder="Question" required></textarea>
+      </div>
+      <button type="submit" class="btn btn-outline-primary">Send Question</button>
+    </form>
+
+    {% if my_questions %}
+    <div class="list-group">
+      {% for q in my_questions %}
+      <div class="list-group-item">
+        <div class="d-flex justify-content-between">
+          <strong>{{ q.subject }}</strong>
+          <span class="badge {% if q.status == 'answered' %}bg-success{% else %}bg-warning text-dark{% endif %}">
+            {{ q.status }}
+          </span>
+        </div>
+        <p class="mb-2 mt-2">{{ q.question }}</p>
+        {% if q.answer %}
+        <div class="border-start border-3 ps-3 small">
+          <strong>Support answer:</strong> {{ q.answer }}
+        </div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-muted">No support questions yet.</p>
+    {% endif %}
+  </div>
+
+  <div class="tab-pane fade" id="settings">
+    <div class="col-md-6">
+      <h6 class="fw-bold mb-3">Privacy</h6>
+      <form action="{{ url_for('toggle_anonymous') }}" method="post" class="mb-4">
+        <div class="d-flex align-items-center gap-3">
+          <button type="submit" class="btn {% if user.is_anonymous %}btn-success{% else %}btn-outline-secondary{% endif %}">
+            {% if user.is_anonymous %}Anonymous bidding: ON{% else %}Anonymous bidding: OFF{% endif %}
+          </button>
+          <small class="text-muted">When on, your username appears as "Anonymous" in bid histories.</small>
+        </div>
+      </form>
+      <h6 class="fw-bold">Danger zone</h6>
+      <form action="{{ url_for('delete_account') }}" method="post">
+        <button type="submit" class="btn btn-outline-danger"
+                onclick="return confirm('Deactivate your account? This cannot be undone.')">
+          Deactivate Account
+        </button>
+      </form>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+const alertCategory = document.getElementById('alertCategorySelect');
+const alertAttrFields = document.getElementById('alertAttrFields');
+if (alertCategory && alertAttrFields) {
+  alertCategory.addEventListener('change', function() {
+    const catId = this.value;
+    alertAttrFields.innerHTML = '';
+    if (!catId) return;
+    fetch(`/api/categories/${catId}/attributes`)
+      .then(r => r.json())
+      .then(data => {
+        if (!data.attributes || data.attributes.length === 0) return;
+        const row = document.createElement('div');
+        row.className = 'row g-2 mt-1';
+        data.attributes.forEach(attr => {
+          const label = attr.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+          row.innerHTML += `
+            <div class="col-md-3">
+              <input type="text" name="attr_${attr}" class="form-control form-control-sm" placeholder="${label}">
+            </div>`;
+        });
+        alertAttrFields.appendChild(row);
+      });
+  });
+}
+</script>
+{% endblock %}

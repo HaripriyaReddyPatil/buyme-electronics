@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+{% block title %}Customer Rep Dashboard – BuyMe{% endblock %}
+{% block content %}
+
+<h2 class="fw-bold mb-4">Customer Rep Panel</h2>
+
+<ul class="nav nav-tabs mb-4">
+  <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#users">Users</a></li>
+  <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#questions">Questions</a></li>
+  <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#auctions">Active Auctions</a></li>
+</ul>
+
+<div class="tab-content">
+
+  <div class="tab-pane fade show active" id="users">
+    <h6 class="fw-bold mb-3">End users</h6>
+    <table class="table table-hover table-sm">
+      <thead class="table-light">
+        <tr><th>Username</th><th>Email</th><th>Joined</th><th>Status</th><th>Actions</th></tr>
+      </thead>
+      <tbody>
+        {% for u in users %}
+        <tr>
+          <td>{{ u.username }}</td>
+          <td>{{ u.email }}</td>
+          <td>{{ u.created_at.strftime('%b %d, %Y') }}</td>
+          <td>
+            {% if u.is_active %}<span class="badge bg-success">Active</span>
+            {% else %}<span class="badge bg-secondary">Inactive</span>{% endif %}
+          </td>
+          <td>
+            <a href="{{ url_for('rep_edit_user', user_id=u.user_id) }}"
+               class="btn btn-outline-secondary btn-sm">Edit</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="tab-pane fade" id="questions">
+    <h6 class="fw-bold mb-3">End-user questions</h6>
+    {% if questions %}
+    <div class="list-group">
+      {% for q in questions %}
+      <div class="list-group-item">
+        <div class="d-flex justify-content-between">
+          <div>
+            <strong>{{ q.subject }}</strong>
+            <span class="text-muted small">from {{ q.user.username }} on {{ q.created_at.strftime('%b %d %H:%M') }}</span>
+          </div>
+          <span class="badge {% if q.status == 'answered' %}bg-success{% else %}bg-warning text-dark{% endif %}">
+            {{ q.status }}
+          </span>
+        </div>
+        <p class="my-2">{{ q.question }}</p>
+        {% if q.answer %}
+        <div class="border-start border-3 ps-3 small mb-2">
+          <strong>Answer:</strong> {{ q.answer }}
+        </div>
+        {% endif %}
+        <form action="{{ url_for('rep_answer_question', question_id=q.question_id) }}" method="post">
+          <div class="input-group input-group-sm">
+            <input type="text" name="answer" class="form-control" placeholder="Type an answer" required>
+            <button type="submit" class="btn btn-primary">Answer</button>
+          </div>
+        </form>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-muted">No questions yet.</p>
+    {% endif %}
+  </div>
+
+  <div class="tab-pane fade" id="auctions">
+    <h6 class="fw-bold mb-3">Active auctions</h6>
+    <table class="table table-hover table-sm">
+      <thead class="table-light">
+        <tr><th>Title</th><th>Seller</th><th>Price</th><th>Bids</th><th>Ends</th><th>Actions</th></tr>
+      </thead>
+      <tbody>
+        {% for item in flagged_items %}
+        <tr>
+          <td><a href="{{ url_for('item_detail', item_id=item.item_id) }}">{{ item.title }}</a></td>
+          <td>{{ item.seller.username }}</td>
+          <td>${{ "%.2f"|format(item.display_price) }}</td>
+          <td>{{ item.bids|length }}</td>
+          <td>{{ item.end_time.strftime('%b %d %H:%M') }}</td>
+          <td>
+            <form action="{{ url_for('rep_remove_item', item_id=item.item_id) }}" method="post" class="d-inline">
+              <button type="submit" class="btn btn-danger btn-sm"
+                      onclick="return confirm('Remove this auction?')">Remove</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+</div>
+{% endblock %}

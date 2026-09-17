@@ -1,0 +1,190 @@
+{% extends 'base.html' %}
+{% block title %}{{ item.title }} – BuyMe{% endblock %}
+{% block content %}
+
+<nav aria-label="breadcrumb" class="mb-3">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Home</a></li>
+    <li class="breadcrumb-item"><a href="{{ url_for('search', category=item.category_id) }}">{{ item.category.name }}</a></li>
+    <li class="breadcrumb-item active">{{ item.title }}</li>
+  </ol>
+</nav>
+
+<div class="row">
+  <div class="col-md-7">
+    {% if item.image_url %}
+    <img src="{{ item.image_url }}" alt="{{ item.title }}"
+         class="img-fluid rounded mb-3 shadow-sm" style="max-height:340px;width:100%;object-fit:cover;">
+    {% endif %}
+    <h2 class="fw-bold">{{ item.title }}</h2>
+    <p class="text-muted mb-1">
+      Category: <strong>{{ item.category.name }}</strong>
+      {% if item.category.parent %}/ {{ item.category.parent.name }}{% endif %}
+      &nbsp;|&nbsp; Seller:
+      <strong><a href="{{ url_for('user_history', user_id=item.seller_id) }}" class="text-decoration-none">{{ item.seller.username }}</a></strong>
+    </p>
+
+    <hr>
+    <p>{{ item.description }}</p>
+
+    {% if item.attributes %}
+    <h6 class="fw-bold mt-3">Item details</h6>
+    <table class="table table-sm table-bordered w-auto">
+      {% for attr in item.attributes %}
+      <tr>
+        <th class="text-capitalize bg-light">{{ attr.attr_name.replace('_', ' ') }}</th>
+        <td>{{ attr.attr_value }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+    {% endif %}
+  </div>
+
+  <div class="col-md-5">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <div class="mb-3">
+          <span class="text-muted">Current price</span>
+          <div class="fs-2 fw-bold text-primary">${{ "%.2f"|format(item.display_price) }}</div>
+          <small class="text-muted">{{ bids|length }} bid(s) &nbsp;|&nbsp; Min increment: ${{ "%.2f"|format(item.bid_increment) }}</small>
+        </div>
+
+        <div class="mb-3">
+          <span class="badge {% if item.status == 'active' %}bg-success{% else %}bg-secondary{% endif %}">
+            {{ item.status|capitalize }}
+          </span>
+          <small class="ms-2 text-muted">
+            {% if item.status == 'active' %}
+              Ends {{ item.end_time.strftime('%b %d, %Y at %H:%M UTC') }}
+            {% else %}
+              Closed {{ item.end_time.strftime('%b %d, %Y') }}
+            {% endif %}
+          </small>
+        </div>
+
+        {% if item.result %}
+          {% if item.result.winner %}
+          <div class="alert alert-success">
+            Sold to <strong>{{ item.result.winner.username }}</strong>
+            for <strong>${{ "%.2f"|format(item.result.final_price) }}</strong>
+          </div>
+          {% else %}
+          <div class="alert alert-warning">Reserve not met — item unsold.</div>
+          {% endif %}
+        {% endif %}
+
+        {% if session.user_id and item.status == 'active' and item.seller_id != session.user_id %}
+        <form action="{{ url_for('place_bid', item_id=item.item_id) }}" method="post">
+          <div class="mb-2">
+            <label class="form-label fw-bold">Your bid ($)</label>
+            <input type="number" name="bid_amount" class="form-control"
+                   step="0.01"
+                   min="{{ (item.display_price|float + item.bid_increment|float)|round(2) }}"
+                   placeholder="Min ${{ '%.2f'|format(item.display_price|float + item.bid_increment|float) }}"
+                   required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label text-muted">Auto-bid limit (optional, secret)</label>
+            <input type="number" name="auto_bid_limit" class="form-control" step="0.01"
+                   placeholder="Set your max and we'll bid for you">
+            <div class="form-text">If outbid, we automatically raise your bid up to this limit.</div>
+          </div>
+          <button type="submit" class="btn btn-primary w-100">Place Bid</button>
+        </form>
+        {% elif not session.user_id %}
+        <a href="{{ url_for('login') }}" class="btn btn-outline-primary w-100">Log in to bid</a>
+        {% elif item.seller_id == session.user_id %}
+        <div class="alert alert-info mb-0">This is your listing.</div>
+          {% if item.status == 'active' %}
+          <form action="{{ url_for('cancel_item', item_id=item.item_id) }}" method="post" class="mt-2">
+            <button type="submit" class="btn btn-outline-danger w-100"
+                    onclick="return confirm('Cancel this auction?')">Cancel Auction</button>
+          </form>
+          {% endif %}
+        {% endif %}
+
+        {% if session.role in ('customer_rep', 'admin') and item.status == 'active' %}
+        <form action="{{ url_for('rep_remove_item', item_id=item.item_id) }}" method="post" class="mt-2">
+          <button type="submit" class="btn btn-outline-danger btn-sm w-100"
+                  onclick="return confirm('Remove this auction?')">Rep: Remove Auction</button>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if session.user_id %}
+    <div class="card mt-3">
+      <div class="card-body">
+        <h6 class="fw-bold">Set an alert for similar items</h6>
+        <form action="{{ url_for('new_alert') }}" method="post" class="d-flex gap-2">
+          <input type="hidden" name="category_id" value="{{ item.category_id }}">
+          <input type="text" name="keywords" class="form-control form-control-sm"
+                 placeholder="e.g. MacBook Pro" value="{{ item.title.split()[0] }}">
+          <button type="submit" class="btn btn-outline-secondary btn-sm">Save Alert</button>
+        </form>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<hr class="mt-4">
+<h5 class="fw-bold">Bid history</h5>
+{% if bids %}
+<table class="table table-sm">
+  <thead class="table-light">
+    <tr><th>Bidder</th><th>Amount</th><th>Time</th><th>Type</th>
+      {% if session.role in ('customer_rep', 'admin') %}<th>Action</th>{% endif %}
+    </tr>
+  </thead>
+  <tbody>
+    {% for bid in bids %}
+    <tr>
+      <td>
+        {% if bid.bidder.is_anonymous and bid.bidder_id != session.user_id %}
+          Anonymous
+        {% else %}
+          <a href="{{ url_for('user_history', user_id=bid.bidder_id) }}" class="text-decoration-none">{{ bid.bidder.username }}</a>
+        {% endif %}
+      </td>
+      <td>${{ "%.2f"|format(bid.amount) }}</td>
+      <td>{{ bid.placed_at.strftime('%b %d %H:%M') }}</td>
+      <td>{% if bid.is_auto %}<span class="badge bg-info text-dark">auto</span>{% else %}manual{% endif %}</td>
+      {% if session.role in ('customer_rep', 'admin') %}
+      <td>
+        <form action="{{ url_for('rep_remove_bid', bid_id=bid.bid_id) }}" method="post" class="d-inline">
+          <button type="submit" class="btn btn-link btn-sm text-danger p-0"
+                  onclick="return confirm('Remove this bid?')">Remove</button>
+        </form>
+      </td>
+      {% endif %}
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="text-muted">No bids yet. Be the first!</p>
+{% endif %}
+
+{% if similar %}
+<hr>
+<h5 class="fw-bold">Similar items</h5>
+<div class="row row-cols-1 row-cols-md-4 g-3">
+  {% for s in similar %}
+  <div class="col">
+    <div class="card h-100">
+      {% if s.image_url %}
+      <img src="{{ s.image_url }}" class="card-img-top" alt="{{ s.title }}"
+           style="height:110px;object-fit:cover;">
+      {% endif %}
+      <div class="card-body">
+        <h6><a href="{{ url_for('item_detail', item_id=s.item_id) }}" class="text-decoration-none">{{ s.title }}</a></h6>
+        <span class="text-primary fw-bold">${{ "%.2f"|format(s.display_price) }}</span>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% endblock %}

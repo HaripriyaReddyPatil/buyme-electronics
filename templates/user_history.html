@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+{% block title %}{{ viewed_user.username }} - Auction History{% endblock %}
+{% block content %}
+
+<h2 class="fw-bold mb-1">{{ viewed_user.username }}</h2>
+<p class="text-muted">Auction participation history</p>
+
+<div class="row g-4">
+  <div class="col-md-6">
+    <h5 class="fw-bold">Selling history</h5>
+    {% if selling_items %}
+    <table class="table table-sm table-hover">
+      <thead class="table-light"><tr><th>Item</th><th>Category</th><th>Price</th><th>Status</th></tr></thead>
+      <tbody>
+        {% for item in selling_items %}
+        <tr>
+          <td><a href="{{ url_for('item_detail', item_id=item.item_id) }}">{{ item.title }}</a></td>
+          <td>{{ item.category.name }}</td>
+          <td>${{ "%.2f"|format(item.display_price) }}</td>
+          <td>{{ item.status }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="text-muted">No selling history.</p>
+    {% endif %}
+  </div>
+
+  <div class="col-md-6">
+    <h5 class="fw-bold">Bidding history</h5>
+    {% if bidding_items %}
+    <table class="table table-sm table-hover">
+      <thead class="table-light"><tr><th>Item</th><th>Category</th><th>Current price</th><th>Status</th></tr></thead>
+      <tbody>
+        {% for item in bidding_items %}
+        <tr>
+          <td><a href="{{ url_for('item_detail', item_id=item.item_id) }}">{{ item.title }}</a></td>
+          <td>{{ item.category.name }}</td>
+          <td>${{ "%.2f"|format(item.display_price) }}</td>
+          <td>{{ item.status }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="text-muted">No bidding history.</p>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}

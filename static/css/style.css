@@ -1,0 +1,30 @@
+body {
+  background-color: #f8f9fa;
+}
+
+.navbar-brand {
+  font-size: 1.5rem;
+  letter-spacing: -0.5px;
+}
+
+.card {
+  border: 1px solid #e9ecef;
+  border-radius: 10px;
+}
+
+.card:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08) !important;
+  transition: box-shadow 0.2s ease;
+}
+
+.badge {
+  font-weight: 500;
+}
+
+.table th {
+  font-weight: 500;
+}
+
+footer {
+  border-top: 1px solid #dee2e6;
+}
