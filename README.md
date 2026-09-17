@@ -1,75 +1,348 @@
-# BuyMe - CS 527 Auction System
+# BuyMe Electronics
 
-## Setup
+**Full-Stack Electronics Auction Marketplace**
 
-### 1. Database
+BuyMe Electronics is a Flask-based web application that allows users to list electronics for auction, place bids, manage bidding activity, search product categories, and interact with customer support. The platform also includes separate tools for customer representatives and administrators.
 
-The app defaults to the included local SQLite database for quick testing:
+## Overview
+
+The application supports three user roles:
+
+- Buyers and sellers
+- Customer representatives
+- Administrators
+
+Users can create accounts, list electronics for auction, place manual or automatic bids, search listings, view bidding history, and manage alerts.
+
+Customer representatives can help manage users, bids, listings, and support requests, while administrators can manage representatives and review marketplace activity and sales reports.
+
+## Key Features
+
+### User Accounts
+
+Users can:
+
+- Register and log in
+- Log out securely
+- Update account information
+- Deactivate their account
+- View personal activity and bidding history
+
+### Auction Listings
+
+Sellers can:
+
+- Create auction listings
+- Select electronics categories and subcategories
+- Add category-specific product information
+- Set auction details
+- Review their listing activity
+
+### Bidding System
+
+Buyers can:
+
+- Place bids on active auctions
+- Use automatic bidding
+- View auction bid history
+- Review their own bidding activity
+- View buyer and seller participation history
+- Find similar recent items
+
+### Search and Filtering
+
+Listings can be searched and filtered using:
+
+- Keywords
+- Electronics category hierarchy
+- Price range
+- Sorting options
+- Category-specific attributes
+
+### Alerts
+
+Users can save alerts for products or auction conditions they are interested in.
+
+### Customer Support
+
+Users can submit questions through the platform.
+
+Customer representatives can:
+
+- Respond to user questions
+- Edit user information
+- Reset user passwords
+- Remove inappropriate bids
+- Remove invalid or prohibited auction listings
+
+### Administrative Dashboard
+
+Administrators can:
+
+- Create customer representative accounts
+- Review total marketplace earnings
+- View earnings by item
+- View earnings by category
+- View earnings by user
+- Identify best-selling items
+- Review top marketplace users
+
+## Product Categories
+
+The marketplace focuses on electronics and supports structured category-specific attributes.
+
+### Electronics
+
+#### Computers
+
+**Laptops**
+
+- Brand
+- Processor
+- RAM
+- Storage
+- Screen size
+- Condition
+
+**Desktops**
+
+- Brand
+- Processor
+- RAM
+- Storage
+- GPU
+- Condition
+
+#### Phones
+
+**Smartphones**
+
+- Brand
+- Model
+- Storage
+- Color
+- Carrier
+- Condition
+
+#### Cameras
+
+**Mirrorless Cameras**
+
+- Brand
+- Model
+- Megapixels
+- Lens mount
+- Condition
+
+**DSLR Cameras**
+
+- Brand
+- Model
+- Megapixels
+- Lens mount
+- Condition
+
+Category-specific fields are data-driven through the database configuration.
+
+## User Roles
+
+### Buyer / Seller
+
+The default user role.
+
+Users can:
+
+- Create auction listings
+- Place bids
+- Use automatic bidding
+- Search and filter products
+- View bidding activity
+- Manage alerts
+- Ask support questions
+
+### Customer Representative
+
+Customer representatives can:
+
+- Respond to support requests
+- Edit user information
+- Reset passwords
+- Remove bids
+- Remove invalid listings
+
+### Administrator
+
+Administrators can:
+
+- Create customer representative accounts
+- Access sales reports
+- Review marketplace earnings
+- Analyze best-selling items and users
+
+## Tech Stack
+
+### Backend
+
+- Python
+- Flask
+- SQLite
+
+### Frontend
+
+- HTML
+- CSS
+- JavaScript
+- Jinja templates
+
+### Database
+
+- SQLite
+- SQL initialization scripts
+
+### Development
+
+- Git
+- GitHub
+
+## Project Structure
+
+```text
+buyme-electronics/
+├── app.py
+├── requirements.txt
+├── setup.sql
+│
+├── instance/
+│
+├── static/
+│   ├── css/
+│   │   └── style.css
+│   └── js/
+│       └── main.js
+│
+├── templates/
+│   ├── admin_dashboard.html
+│   ├── base.html
+│   ├── index.html
+│   ├── item_detail.html
+│   ├── login.html
+│   ├── new_item.html
+│   ├── profile.html
+│   ├── questions.html
+│   ├── register.html
+│   ├── rep_dashboard.html
+│   ├── rep_edit_user.html
+│   ├── search.html
+│   ├── support.html
+│   └── user_history.html
+│
+└── README.md
+```
+
+## Run Locally
+
+### 1. Clone the repository
 
 ```bash
-python app.py
+git clone https://github.com/HaripriyaReddyPatil/buyme-electronics.git
+cd buyme-electronics
 ```
 
-To run against MySQL for the project requirement, create the database and set `BUYME_DATABASE_URI` before starting Flask:
+### 2. Create a virtual environment
 
 ```bash
-mysql -u root -p < setup.sql
-set BUYME_DATABASE_URI=mysql+pymysql://buyme_user:password@localhost/buyme
-python app.py
+python3 -m venv .venv
+source .venv/bin/activate
 ```
 
-PowerShell users can set the variable with:
+For Windows:
 
-```powershell
-$env:BUYME_DATABASE_URI = "mysql+pymysql://buyme_user:password@localhost/buyme"
-python app.py
+```bash
+.venv\Scripts\activate
 ```
 
-### 2. Python Dependencies
+### 3. Install dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 3. Run
+### 4. Start the application
 
 ```bash
 python app.py
 ```
 
-Visit http://localhost:5000.
+Open:
 
-## Default Accounts
+```text
+http://localhost:5000
+```
 
-- Admin: `admin` / `admin123`
-- Customer rep: `support_rep` / `rep123`
-- Sample sellers: `techseller`, `gadgetguru`, `vintagefinds`, `sportsgear` / `pass123`
+## Demo Accounts
 
-## Implemented Requirement Coverage
+The project includes sample accounts for local demonstration.
 
-- End-users can register, log in, log out, deactivate accounts, list items, bid, use automatic bidding, save alerts, ask support questions, and anonymize bid history names.
-- Search supports keyword, the Electronics category hierarchy, price range, sorting, and category-specific attribute filters.
-- Buyers can view bid history for an auction, their own bid history, public buyer/seller auction participation histories, and similar recent items.
-- Customer reps can answer end-user questions, edit user info, reset passwords, remove bids, and remove illegal auctions.
-- Admins can create customer reps and view total earnings, earnings per item, category, and end-user, plus best-selling items and users.
+### Administrator
 
-## Team Category
+```text
+Username: admin
+Password: admin123
+```
 
-This BuyMe instance is restricted to Electronics. Item types and required fields are data-driven through the `categories.attributes` column.
-The seed data includes multiple distinct listings in every leaf subcategory.
+### Customer Representative
 
-- Electronics
-  - Computers
-    - Laptops: brand, processor, ram_gb, storage_gb, screen_size_inch, condition
-    - Desktops: brand, processor, ram_gb, storage_gb, gpu, condition
-  - Phones
-    - Smartphones: brand, model, storage_gb, color, carrier, condition
-  - Cameras
-    - Mirrorless Cameras: brand, model, megapixels, lens_mount, condition
-    - DSLR Cameras: brand, model, megapixels, lens_mount, condition
+```text
+Username: support_rep
+Password: rep123
+```
 
-## User Roles
+### Sample Seller Accounts
 
-- `buyer_seller`: default, can list items and place bids
-- `customer_rep`: can edit users, remove bids, and remove listings
-- `admin`: can create reps and view sales reports
+```text
+techseller
+gadgetguru
+vintagefinds
+sportsgear
+```
+
+Sample password:
+
+```text
+pass123
+```
+
+These credentials are intended only for local demonstration.
+
+## Database
+
+The application uses SQLite for local persistence.
+
+The repository includes `setup.sql` for database initialization and sample data setup.
+
+## Screenshots
+
+Screenshots can be added here to show:
+
+- Home page
+- Auction listing
+- Search and filtering
+- User dashboard
+- Customer representative dashboard
+- Administrator dashboard
+
+## Team Project
+
+BuyMe Electronics was developed as a collaborative software project. The application combines auction management, bidding workflows, search and filtering, support tools, and administrative reporting in a Flask-based system.
+
+## Future Enhancements
+
+- Production database deployment
+- Email notifications for auction activity
+- Payment integration
+- Improved authentication and session security
+- REST API support
+- Automated testing
+- Docker deployment
+- CI/CD with GitHub Actions
+
