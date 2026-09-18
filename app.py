@@ -1,5 +1,4 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
-from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta
 from functools import wraps
@@ -8,145 +7,28 @@ import json
 import re
 from sqlalchemy.orm import aliased
 from config import Config
+from extensions import db
 
 app = Flask(__name__)
 app.config.from_object(Config)
 
-db = SQLAlchemy(app)
+db.init_app(app)
 
 # ─────────────────────────────────────────
 # MODELS
 # ─────────────────────────────────────────
 
-class User(db.Model):
-    __tablename__ = 'users'
-    user_id    = db.Column(db.Integer, primary_key=True)
-    username   = db.Column(db.String(80), unique=True, nullable=False)
-    email      = db.Column(db.String(120), unique=True, nullable=False)
-    password   = db.Column(db.String(256), nullable=False)
-    role       = db.Column(db.Enum('buyer_seller', 'customer_rep', 'admin'), default='buyer_seller')
-    is_active  = db.Column(db.Boolean, default=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    created_by = db.Column(db.Integer, db.ForeignKey('users.user_id'), nullable=True)
-
-    is_anonymous = db.Column(db.Boolean, default=False)  # hide username in bid history
-
-    items      = db.relationship('Item', backref='seller', foreign_keys='Item.seller_id', lazy=True)
-    bids       = db.relationship('Bid', backref='bidder', lazy=True)
-    alerts     = db.relationship('Alert', backref='user', lazy=True)
-
-
-class Category(db.Model):
-    __tablename__ = 'categories'
-    category_id = db.Column(db.Integer, primary_key=True)
-    parent_id   = db.Column(db.Integer, db.ForeignKey('categories.category_id'), nullable=True)
-    name        = db.Column(db.String(100), nullable=False)
-    description = db.Column(db.String(255))
-    attributes  = db.Column(db.JSON)   # list of required attr names for this category
-
-    children    = db.relationship('Category', backref=db.backref('parent', remote_side='Category.category_id'), lazy=True)
-    items       = db.relationship('Item', backref='category', lazy=True)
-
-
-class Item(db.Model):
-    __tablename__ = 'items'
-    item_id       = db.Column(db.Integer, primary_key=True)
-    seller_id     = db.Column(db.Integer, db.ForeignKey('users.user_id'), nullable=False)
-    category_id   = db.Column(db.Integer, db.ForeignKey('categories.category_id'), nullable=False)
-    title         = db.Column(db.String(200), nullable=False)
-    description   = db.Column(db.Text)
-    start_price   = db.Column(db.Numeric(10, 2), nullable=False)
-    min_price     = db.Column(db.Numeric(10, 2), nullable=False)   # secret reserve
-    bid_increment = db.Column(db.Numeric(10, 2), nullable=False)
-    current_price = db.Column(db.Numeric(10, 2))
-    start_time    = db.Column(db.DateTime, default=datetime.utcnow)
-    end_time      = db.Column(db.DateTime, nullable=False)
-    status        = db.Column(db.Enum('active', 'closed', 'cancelled'), default='active')
-    created_at    = db.Column(db.DateTime, default=datetime.utcnow)
-    image_url     = db.Column(db.String(500), nullable=True)
-
-    bids          = db.relationship('Bid', backref='item', lazy=True, order_by='Bid.amount.desc()')
-    attributes    = db.relationship('ItemAttribute', backref='item', lazy=True, cascade='all, delete-orphan')
-    result        = db.relationship('AuctionResult', backref='item', uselist=False, lazy=True)
-
-    @property
-    def top_bid(self):
-        return self.bids[0] if self.bids else None
-
-    @property
-    def display_price(self):
-        return self.current_price if self.current_price else self.start_price
-
-
-class ItemAttribute(db.Model):
-    __tablename__ = 'item_attributes'
-    attr_id   = db.Column(db.Integer, primary_key=True)
-    item_id   = db.Column(db.Integer, db.ForeignKey('items.item_id'), nullable=False)
-    attr_name = db.Column(db.String(100), nullable=False)
-    attr_value = db.Column(db.String(255))
-
-
-class Bid(db.Model):
-    __tablename__ = 'bids'
-    bid_id         = db.Column(db.Integer, primary_key=True)
-    item_id        = db.Column(db.Integer, db.ForeignKey('items.item_id'), nullable=False)
-    bidder_id      = db.Column(db.Integer, db.ForeignKey('users.user_id'), nullable=False)
-    amount         = db.Column(db.Numeric(10, 2), nullable=False)
-    auto_bid_limit = db.Column(db.Numeric(10, 2), nullable=True)   # secret
-    placed_at      = db.Column(db.DateTime, default=datetime.utcnow)
-    is_auto        = db.Column(db.Boolean, default=False)
-
-
-class Alert(db.Model):
-    __tablename__ = 'alerts'
-    alert_id    = db.Column(db.Integer, primary_key=True)
-    user_id     = db.Column(db.Integer, db.ForeignKey('users.user_id'), nullable=False)
-    keywords    = db.Column(db.String(255))
-    category_id = db.Column(db.Integer, db.ForeignKey('categories.category_id'), nullable=True)
-    attr_filters = db.Column(db.JSON)
-    created_at  = db.Column(db.DateTime, default=datetime.utcnow)
-
-    category = db.relationship('Category', backref='alerts')
-
-
-class AuctionResult(db.Model):
-    __tablename__ = 'auction_results'
-    result_id   = db.Column(db.Integer, primary_key=True)
-    item_id     = db.Column(db.Integer, db.ForeignKey('items.item_id'), nullable=False)
-    winner_id   = db.Column(db.Integer, db.ForeignKey('users.user_id'), nullable=True)
-    final_price = db.Column(db.Numeric(10, 2))
-    closed_at   = db.Column(db.DateTime, default=datetime.utcnow)
-
-    winner = db.relationship('User', backref='wins')
-
-
-class OutbidNotification(db.Model):
-    __tablename__ = 'outbid_notifications'
-    notif_id   = db.Column(db.Integer, primary_key=True)
-    user_id    = db.Column(db.Integer, db.ForeignKey('users.user_id'), nullable=False)
-    item_id    = db.Column(db.Integer, db.ForeignKey('items.item_id'), nullable=False)
-    message    = db.Column(db.String(300))
-    is_read    = db.Column(db.Boolean, default=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-
-    user = db.relationship('User', backref='notifications')
-    item = db.relationship('Item', backref='notifications')
-
-
-class SupportQuestion(db.Model):
-    __tablename__ = 'support_questions'
-    question_id = db.Column(db.Integer, primary_key=True)
-    user_id     = db.Column(db.Integer, db.ForeignKey('users.user_id'), nullable=False)
-    rep_id      = db.Column(db.Integer, db.ForeignKey('users.user_id'), nullable=True)
-    subject     = db.Column(db.String(160), nullable=False)
-    question    = db.Column(db.Text, nullable=False)
-    answer      = db.Column(db.Text, nullable=True)
-    status      = db.Column(db.Enum('open', 'answered'), default='open')
-    created_at  = db.Column(db.DateTime, default=datetime.utcnow)
-    answered_at = db.Column(db.DateTime, nullable=True)
-
-    user = db.relationship('User', foreign_keys=[user_id], backref='support_questions')
-    rep = db.relationship('User', foreign_keys=[rep_id])
+from models import (
+    User,
+    Category,
+    Item,
+    ItemAttribute,
+    Bid,
+    Alert,
+    AuctionResult,
+    OutbidNotification,
+    SupportQuestion,
+)
 
 
 # ─────────────────────────────────────────
@@ -213,161 +95,18 @@ def inject_current_user():
 
 
 # ─────────────────────────────────────────
-# HELPERS
+# HELPERS / SERVICES
 # ─────────────────────────────────────────
 
-def close_expired_auctions():
-    """Close any active auctions whose end_time has passed."""
-    now = datetime.utcnow()
-    expired = Item.query.filter(Item.status == 'active', Item.end_time <= now).all()
-    for item in expired:
-        item.status = 'closed'
-        top = item.top_bid
-        winner_id = top.bidder_id if top and float(top.amount) >= float(item.min_price) else None
-        final_price = top.amount if winner_id else None
-        result = AuctionResult(
-            item_id=item.item_id,
-            winner_id=winner_id,
-            final_price=final_price,
-            closed_at=now
-        )
-        db.session.add(result)
-        if winner_id:
-            db.session.add(OutbidNotification(
-                user_id=winner_id,
-                item_id=item.item_id,
-                message=(f'You won "{item.title}" for ${float(final_price):.2f}.')
-            ))
-    if expired:
-        db.session.commit()
-
-
-def notify_outbid_buyers(item, new_bid):
-    """Notify previous bidders when a higher bid is placed."""
-    prior_bidders = (
-        db.session.query(Bid.bidder_id)
-        .filter(Bid.item_id == item.item_id,
-                Bid.bidder_id != new_bid.bidder_id,
-                Bid.placed_at < new_bid.placed_at)
-        .distinct()
-        .all()
-    )
-    for (bidder_id,) in prior_bidders:
-        db.session.add(OutbidNotification(
-            user_id=bidder_id,
-            item_id=item.item_id,
-            message=(f'A higher bid was placed on "{item.title}". '
-                     f'Current price is ${float(item.current_price):.2f}.')
-        ))
-
-
-def process_auto_bids(item, new_bid):
-    """Run proxy bidding after a bid is placed."""
-    increment = float(item.bid_increment)
-    current_price = float(item.current_price)
-
-    max_limits = {}
-    for bid in Bid.query.filter(Bid.item_id == item.item_id, Bid.auto_bid_limit != None).all():
-        max_limits[bid.bidder_id] = max(max_limits.get(bid.bidder_id, 0), float(bid.auto_bid_limit))
-
-    while True:
-        leader = Bid.query.filter_by(item_id=item.item_id).order_by(
-            Bid.amount.desc(), Bid.placed_at.asc()
-        ).first()
-        if not leader:
-            break
-
-        next_amount = current_price + increment
-        challengers = [
-            (bidder_id, limit)
-            for bidder_id, limit in max_limits.items()
-            if bidder_id != leader.bidder_id and limit >= next_amount
-        ]
-        if not challengers:
-            break
-
-        bidder_id, limit = max(challengers, key=lambda row: (row[1], -row[0]))
-        auto = Bid(
-            item_id=item.item_id,
-            bidder_id=bidder_id,
-            amount=next_amount,
-            auto_bid_limit=limit,
-            is_auto=True
-        )
-        item.current_price = next_amount
-        current_price = next_amount
-        db.session.add(auto)
-        db.session.flush()
-
-    final_leader = Bid.query.filter_by(item_id=item.item_id).order_by(
-        Bid.amount.desc(), Bid.placed_at.asc()
-    ).first()
-    notified = set()
-    for bidder_id, limit in max_limits.items():
-        if final_leader and bidder_id == final_leader.bidder_id:
-            continue
-        if limit <= float(item.current_price) and bidder_id not in notified:
-            notified.add(bidder_id)
-            db.session.add(OutbidNotification(
-                user_id=bidder_id,
-                item_id=item.item_id,
-                message=(f"You've been outbid on \"{item.title}\". "
-                         f"Current price ${float(item.current_price):.2f} reached your "
-                         f"auto-bid limit of ${limit:.2f}.")
-            ))
-    db.session.commit()
-
-
-def decode_alert_payload(payload):
-    """Return alert JSON safely for databases migrated from plain TEXT."""
-    if isinstance(payload, dict):
-        return payload
-    if isinstance(payload, str) and payload.strip():
-        try:
-            decoded = json.loads(payload)
-            return decoded if isinstance(decoded, dict) else {}
-        except json.JSONDecodeError:
-            return {}
-    return {}
-
-
-def normalize_item_title(title):
-    normalized = title.lower().replace('–', '-').replace('—', '-')
-    return re.sub(r'[^a-z0-9]+', ' ', normalized).strip()
-
-
-def fire_alerts(item):
-    """Store alert notifications for users whose alerts match a newly listed item."""
-    alerts = Alert.query.all()
-    for alert in alerts:
-        if alert.user_id == item.seller_id:
-            continue  # Don't notify seller about their own listing
-        keyword_match = True
-        if alert.keywords:
-            words = [w.strip().lower() for w in alert.keywords.split(',') if w.strip()]
-            text = (item.title + ' ' + (item.description or '')).lower()
-            keyword_match = any(w in text for w in words)
-        cat_match = True
-        if alert.category_id:
-            cat_ids = get_descendant_ids(alert.category_id)
-            cat_match = item.category_id in cat_ids
-        attr_match = True
-        payload = decode_alert_payload(alert.attr_filters)
-        filters = payload.get('filters', {})
-        if filters:
-            item_attrs = {a.attr_name: (a.attr_value or '').lower() for a in item.attributes}
-            for name, expected in filters.items():
-                if expected and expected.lower() not in item_attrs.get(name, ''):
-                    attr_match = False
-                    break
-        if keyword_match and cat_match and attr_match:
-            # Store as a lightweight notification in the Alert's attr_filters field
-            notifs = decode_alert_payload(alert.attr_filters)
-            hits = notifs.get('hits', [])
-            hits.append({'item_id': item.item_id, 'title': item.title,
-                         'notified_at': datetime.utcnow().isoformat()})
-            alert.attr_filters = {**notifs, 'hits': hits[-20:]}  # keep last 20
-    db.session.commit()
+from services import (
+    close_expired_auctions,
+    notify_outbid_buyers,
+    process_auto_bids,
+    decode_alert_payload,
+    normalize_item_title,
+    fire_alerts,
+    get_descendant_ids,
+)
 
 
 # ─────────────────────────────────────────
@@ -434,15 +173,6 @@ def search():
                            q=q, cat_id=cat_id, sort=sort,
                            search_attributes=search_attributes,
                            attr_filters=attr_filters)
-
-
-def get_descendant_ids(category_id):
-    ids = [category_id]
-    children = Category.query.filter_by(parent_id=category_id).all()
-    for c in children:
-        ids.extend(get_descendant_ids(c.category_id))
-    return ids
-
 
 @app.route('/item/<int:item_id>')
 def item_detail(item_id):
