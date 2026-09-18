@@ -1,61 +1,342 @@
 {% extends 'base.html' %}
-{% block title %}BuyMe – Live Auctions{% endblock %}
+
+{% block title %}BuyMe – Electronics Auction Marketplace{% endblock %}
+
 {% block content %}
 
-<div class="row mb-4">
-  <div class="col">
-    <h2 class="fw-bold">Live Auctions</h2>
-    <p class="text-muted">Browse and bid on the latest electronics listings.</p>
-  </div>
-</div>
+<section class="market-hero">
+    <div class="hero-copy">
 
-<div class="row mb-3">
-  {% for cat in categories %}
-  <div class="col-auto">
-    <a href="{{ url_for('search', category=cat.category_id) }}"
-       class="btn btn-outline-primary btn-sm mb-2">{{ cat.name }}</a>
-    {% for sub in cat.children %}
-      <a href="{{ url_for('search', category=sub.category_id) }}"
-         class="btn btn-outline-secondary btn-sm mb-2 ms-1">{{ sub.name }}</a>
-    {% endfor %}
-  </div>
-  {% endfor %}
-</div>
+        <span class="hero-eyebrow">
+            Live electronics marketplace
+        </span>
 
-<div class="row row-cols-1 row-cols-md-3 g-4">
-  {% for item in items %}
-  <div class="col">
-    <div class="card h-100 shadow-sm">
-      {% if item.image_url %}
-      <img src="{{ item.image_url }}" class="card-img-top" alt="{{ item.title }}"
-           style="height:180px;object-fit:cover;">
-      {% else %}
-      <div class="bg-light d-flex align-items-center justify-content-center"
-           style="height:180px;color:#aaa;font-size:2rem;">📦</div>
-      {% endif %}
-      <div class="card-body">
-        <span class="badge bg-secondary mb-1">{{ item.category.name }}</span>
-        <h5 class="card-title">
-          <a href="{{ url_for('item_detail', item_id=item.item_id) }}" class="text-decoration-none text-dark">
-            {{ item.title }}
-          </a>
-        </h5>
-        <p class="card-text text-muted small">{{ item.description[:100] }}{% if item.description|length > 100 %}…{% endif %}</p>
-        <div class="d-flex justify-content-between align-items-center">
-          <span class="fs-5 fw-bold text-primary">${{ "%.2f"|format(item.display_price) }}</span>
-          <span class="text-muted small">{{ item.bids|length }} bid(s)</span>
+        <h1>
+            Bid on electronics
+            <span>worth watching.</span>
+        </h1>
+
+        <p>
+            Discover laptops, smartphones, cameras, and desktops
+            from active sellers. Place manual bids or let BuyMe
+            automatically bid up to your private limit.
+        </p>
+
+        <div class="hero-actions">
+
+            <a
+                href="{{ url_for('search') }}"
+                class="btn btn-primary btn-lg"
+            >
+                Browse all auctions
+            </a>
+
+            {% if current_user %}
+                <a
+                    href="{{ url_for('new_item') }}"
+                    class="btn btn-outline-primary btn-lg"
+                >
+                    Sell an item
+                </a>
+            {% else %}
+                <a
+                    href="{{ url_for('register') }}"
+                    class="btn btn-outline-primary btn-lg"
+                >
+                    Start selling
+                </a>
+            {% endif %}
+
         </div>
-      </div>
-      <div class="card-footer d-flex justify-content-between align-items-center">
-        <small class="text-muted">Ends {{ item.end_time.strftime('%b %d, %H:%M') }}</small>
-        <a href="{{ url_for('item_detail', item_id=item.item_id) }}" class="btn btn-primary btn-sm">Bid Now</a>
-      </div>
+
     </div>
-  </div>
-  {% else %}
-  <div class="col-12">
-    <p class="text-muted">No active auctions right now. <a href="{{ url_for('new_item') }}">List something!</a></p>
-  </div>
-  {% endfor %}
-</div>
+
+    <div class="hero-panel">
+
+        <div class="hero-stat-grid">
+
+            <div class="hero-stat">
+                <span class="hero-stat-value">
+                    {{ items|length }}
+                </span>
+
+                <span class="hero-stat-label">
+                    Featured auctions
+                </span>
+            </div>
+
+            <div class="hero-stat">
+                <span class="hero-stat-value">
+                    {{ categories|length }}
+                </span>
+
+                <span class="hero-stat-label">
+                    Main categories
+                </span>
+            </div>
+
+            <div class="hero-stat">
+                <span class="hero-stat-value">
+                    Proxy
+                </span>
+
+                <span class="hero-stat-label">
+                    Automatic bidding
+                </span>
+            </div>
+
+            <div class="hero-stat">
+                <span class="hero-stat-value">
+                    Live
+                </span>
+
+                <span class="hero-stat-label">
+                    Marketplace alerts
+                </span>
+            </div>
+
+        </div>
+
+        <div class="hero-feature">
+            <span class="hero-feature-dot"></span>
+
+            <div>
+                <strong>
+                    Auctions are active
+                </strong>
+
+                <small>
+                    Bid histories, alerts and reserve-price logic are
+                    handled directly by the platform.
+                </small>
+            </div>
+        </div>
+
+    </div>
+</section>
+
+
+<section class="category-section">
+
+    <div class="section-heading">
+
+        <div>
+            <span class="section-eyebrow">
+                Browse by category
+            </span>
+
+            <h2>
+                Find the right electronics
+            </h2>
+        </div>
+
+        <a
+            href="{{ url_for('search') }}"
+            class="section-link"
+        >
+            View all listings →
+        </a>
+
+    </div>
+
+    <div class="category-chip-row">
+
+        {% for cat in categories %}
+
+            <a
+                href="{{ url_for('search', category=cat.category_id) }}"
+                class="category-chip category-chip-primary"
+            >
+                {{ cat.name }}
+            </a>
+
+            {% for sub in cat.children %}
+
+                <a
+                    href="{{ url_for('search', category=sub.category_id) }}"
+                    class="category-chip"
+                >
+                    {{ sub.name }}
+                </a>
+
+            {% endfor %}
+
+        {% endfor %}
+
+    </div>
+
+</section>
+
+
+<section class="auction-section">
+
+    <div class="section-heading auction-section-heading">
+
+        <div>
+
+            <div class="live-label">
+                <span class="live-dot"></span>
+                Live now
+            </div>
+
+            <h2>
+                Featured auctions
+            </h2>
+
+            <p>
+                Auctions ending soon, with current prices and bid activity.
+            </p>
+
+        </div>
+
+        <a
+            href="{{ url_for('search', sort='end_asc') }}"
+            class="section-link"
+        >
+            Ending soon →
+        </a>
+
+    </div>
+
+
+    {% if items %}
+
+        <div class="auction-grid">
+
+            {% for item in items %}
+
+                <article class="auction-card">
+
+                    <a
+                        href="{{ url_for('item_detail', item_id=item.item_id) }}"
+                        class="auction-image-link"
+                    >
+
+                        {% if item.image_url %}
+
+                            <img
+                                src="{{ item.image_url }}"
+                                alt="{{ item.title }}"
+                                class="auction-image"
+                            >
+
+                        {% else %}
+
+                            <div class="auction-image-placeholder">
+                                <span>📦</span>
+                            </div>
+
+                        {% endif %}
+
+                        <div class="auction-image-overlay">
+
+                            <span class="category-pill">
+                                {{ item.category.name }}
+                            </span>
+
+                            {% if item.bids|length > 0 %}
+                                <span class="bid-pill">
+                                    {{ item.bids|length }} bid{% if item.bids|length != 1 %}s{% endif %}
+                                </span>
+                            {% endif %}
+
+                        </div>
+
+                    </a>
+
+
+                    <div class="auction-card-body">
+
+                        <a
+                            href="{{ url_for('item_detail', item_id=item.item_id) }}"
+                            class="auction-title"
+                        >
+                            {{ item.title }}
+                        </a>
+
+                        <p class="auction-description">
+                            {{ item.description[:105] }}
+                            {% if item.description|length > 105 %}…{% endif %}
+                        </p>
+
+                        <div class="auction-price-row">
+
+                            <div>
+                                <span class="price-label">
+                                    Current price
+                                </span>
+
+                                <strong class="auction-price">
+                                    ${{ "%.2f"|format(item.display_price) }}
+                                </strong>
+                            </div>
+
+                            <div class="bid-count">
+                                {{ item.bids|length }}
+                                bid{% if item.bids|length != 1 %}s{% endif %}
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="auction-card-footer">
+
+                        <div class="auction-time">
+
+                            <span class="time-label">
+                                Ends
+                            </span>
+
+                            <span>
+                                {{ item.end_time.strftime('%b %d, %H:%M') }}
+                            </span>
+
+                        </div>
+
+                        <a
+                            href="{{ url_for('item_detail', item_id=item.item_id) }}"
+                            class="btn btn-primary btn-sm auction-bid-btn"
+                        >
+                            View auction
+                        </a>
+
+                    </div>
+
+                </article>
+
+            {% endfor %}
+
+        </div>
+
+    {% else %}
+
+        <div class="empty-auctions">
+
+            <div class="empty-icon">
+                ◌
+            </div>
+
+            <h3>
+                No active auctions yet
+            </h3>
+
+            <p>
+                Be the first seller to add an electronics listing.
+            </p>
+
+            <a
+                href="{{ url_for('new_item') }}"
+                class="btn btn-primary"
+            >
+                Create an auction
+            </a>
+
+        </div>
+
+    {% endif %}
+
+</section>
+
 {% endblock %}

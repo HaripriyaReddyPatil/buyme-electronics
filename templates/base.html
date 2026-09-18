@@ -1,152 +1,517 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}BuyMe{% endblock %}</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1"
+    >
+
+    <meta
+        name="description"
+        content="BuyMe - a full-stack electronics auction marketplace."
+    >
+
+    <title>
+        {% block title %}BuyMe Marketplace{% endblock %}
+    </title>
+
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+        rel="stylesheet"
+    >
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='css/style.css') }}"
+    >
 </head>
+
 <body>
 
-<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-  <div class="container">
-    <a class="navbar-brand fw-bold" href="{{ url_for('index') }}">BuyMe</a>
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav">
-      <span class="navbar-toggler-icon"></span>
-    </button>
-    <div class="collapse navbar-collapse" id="nav">
-      <form class="d-flex me-auto ms-3" action="{{ url_for('search') }}" method="get">
-        <input class="form-control me-2" type="search" name="q" placeholder="Search auctions…"
-               value="{{ request.args.get('q', '') }}">
-        <button class="btn btn-light" type="submit">Search</button>
-      </form>
-      <ul class="navbar-nav">
-        <li class="nav-item">
-          <a class="nav-link" href="{{ url_for('questions') }}">Q&amp;A</a>
-        </li>
-        {% if session.user_id %}
-          <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('new_item') }}">+ List Item</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('support') }}">Support</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('profile') }}">{{ session.username }}</a>
-          </li>
-          {% if session.role in ('customer_rep', 'admin') %}
-          <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('rep_dashboard') }}">Rep Panel</a>
-          </li>
-          {% endif %}
-          {% if session.role == 'admin' %}
-          <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('admin_dashboard') }}">Admin</a>
-          </li>
-          {% endif %}
-          <li class="nav-item">
-            <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
-          </li>
-        {% else %}
-          <li class="nav-item"><a class="nav-link" href="{{ url_for('login') }}">Login</a></li>
-          <li class="nav-item"><a class="nav-link" href="{{ url_for('register') }}">Register</a></li>
-        {% endif %}
-      </ul>
+<nav class="navbar navbar-expand-lg buyme-navbar sticky-top">
+    <div class="container">
+
+        <a
+            class="navbar-brand buyme-brand"
+            href="{{ url_for('index') }}"
+        >
+            <span class="brand-mark">B</span>
+
+            <span>
+                BuyMe
+                <small>Marketplace</small>
+            </span>
+        </a>
+
+        <button
+            class="navbar-toggler"
+            type="button"
+            data-bs-toggle="collapse"
+            data-bs-target="#buymeNavigation"
+            aria-controls="buymeNavigation"
+            aria-expanded="false"
+            aria-label="Toggle navigation"
+        >
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div
+            class="collapse navbar-collapse"
+            id="buymeNavigation"
+        >
+
+            <form
+                class="navbar-search"
+                action="{{ url_for('search') }}"
+                method="get"
+            >
+                <div class="search-shell">
+
+                    <svg
+                        class="search-icon"
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                    >
+                        <path
+                            d="m21 21-4.35-4.35m2.35-5.65a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z"
+                        />
+                    </svg>
+
+                    <input
+                        type="search"
+                        name="q"
+                        placeholder="Search laptops, phones, cameras..."
+                        value="{{ request.args.get('q', '') }}"
+                        aria-label="Search auctions"
+                    >
+
+                    <button
+                        type="submit"
+                        class="search-submit"
+                    >
+                        Search
+                    </button>
+                </div>
+            </form>
+
+            <ul class="navbar-nav ms-auto align-items-lg-center nav-actions">
+
+                <li class="nav-item">
+                    <a
+                        class="nav-link"
+                        href="{{ url_for('questions') }}"
+                    >
+                        Q&amp;A
+                    </a>
+                </li>
+
+                {% if current_user %}
+
+                    <li class="nav-item">
+                        <a
+                            class="nav-link"
+                            href="{{ url_for('new_item') }}"
+                        >
+                            Sell
+                        </a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a
+                            class="nav-link"
+                            href="{{ url_for('support') }}"
+                        >
+                            Support
+                        </a>
+                    </li>
+
+                    {% if current_user.role in ('customer_rep', 'admin') %}
+                        <li class="nav-item">
+                            <a
+                                class="nav-link"
+                                href="{{ url_for('rep_dashboard') }}"
+                            >
+                                Rep Panel
+                            </a>
+                        </li>
+                    {% endif %}
+
+                    {% if current_user.role == 'admin' %}
+                        <li class="nav-item">
+                            <a
+                                class="nav-link"
+                                href="{{ url_for('admin_dashboard') }}"
+                            >
+                                Admin
+                            </a>
+                        </li>
+                    {% endif %}
+
+                    <li class="nav-item dropdown">
+
+                        <a
+                            class="nav-link dropdown-toggle user-menu"
+                            href="#"
+                            role="button"
+                            data-bs-toggle="dropdown"
+                            aria-expanded="false"
+                        >
+                            <span class="user-avatar">
+                                {{ current_user.username[0]|upper }}
+                            </span>
+
+                            {{ current_user.username }}
+                        </a>
+
+                        <ul class="dropdown-menu dropdown-menu-end profile-dropdown">
+
+                            <li>
+                                <a
+                                    class="dropdown-item"
+                                    href="{{ url_for('profile') }}"
+                                >
+                                    My profile
+                                </a>
+                            </li>
+
+                            <li>
+                                <a
+                                    class="dropdown-item"
+                                    href="{{ url_for('new_item') }}"
+                                >
+                                    Create auction
+                                </a>
+                            </li>
+
+                            <li>
+                                <hr class="dropdown-divider">
+                            </li>
+
+                            <li>
+                                <a
+                                    class="dropdown-item text-danger"
+                                    href="{{ url_for('logout') }}"
+                                >
+                                    Log out
+                                </a>
+                            </li>
+
+                        </ul>
+                    </li>
+
+                {% else %}
+
+                    <li class="nav-item">
+                        <a
+                            class="nav-link"
+                            href="{{ url_for('login') }}"
+                        >
+                            Log in
+                        </a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a
+                            class="btn navbar-register"
+                            href="{{ url_for('register') }}"
+                        >
+                            Create account
+                        </a>
+                    </li>
+
+                {% endif %}
+
+            </ul>
+        </div>
     </div>
-  </div>
 </nav>
 
-<div class="container mt-4">
-  {% for cat, msg in get_flashed_messages(with_categories=true) %}
-    <div class="alert alert-{{ cat }} alert-dismissible fade show" role="alert">
-      {{ msg }}
-      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+
+<main class="page-shell">
+
+    <div class="container">
+
+        <div class="flash-container">
+
+            {% for cat, msg in get_flashed_messages(with_categories=true) %}
+
+                <div
+                    class="alert alert-{{ cat }} alert-dismissible fade show shadow-sm"
+                    role="alert"
+                >
+                    {{ msg }}
+
+                    <button
+                        type="button"
+                        class="btn-close"
+                        data-bs-dismiss="alert"
+                        aria-label="Close"
+                    ></button>
+                </div>
+
+            {% endfor %}
+
+        </div>
+
+        {% block content %}{% endblock %}
+
     </div>
-  {% endfor %}
 
-  {% block content %}{% endblock %}
-</div>
+</main>
 
-<footer class="mt-5 py-3 bg-light text-center text-muted small">
-  BuyMe Auction System &mdash; CS 527 Project
+
+<footer class="buyme-footer">
+
+    <div class="container">
+
+        <div class="footer-grid">
+
+            <div>
+                <div class="footer-brand">
+                    <span class="brand-mark brand-mark-small">B</span>
+                    BuyMe
+                </div>
+
+                <p class="footer-copy">
+                    A full-stack electronics auction marketplace
+                    with proxy bidding, alerts and marketplace analytics.
+                </p>
+            </div>
+
+            <div class="footer-meta">
+                <span>Built with Flask &amp; SQLAlchemy</span>
+                <span>Portfolio Project</span>
+            </div>
+
+        </div>
+
+        <div class="footer-bottom">
+            <span>
+                © 2026 BuyMe Marketplace
+            </span>
+
+            <span>
+                Electronics auctions made simple.
+            </span>
+        </div>
+
+    </div>
+
 </footer>
 
-<!-- AI Chatbot Widget -->
-<div id="chatbot-btn" onclick="toggleChat()" title="BuyMe Assistant"
-     style="position:fixed;bottom:24px;right:24px;width:56px;height:56px;border-radius:50%;
-            background:#0d6efd;color:#fff;display:flex;align-items:center;justify-content:center;
-            cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,0.25);font-size:24px;z-index:9999;">
-  💬
-</div>
-<div id="chatbot-box"
-     style="display:none;position:fixed;bottom:90px;right:24px;width:340px;max-height:480px;
-            background:#fff;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.2);
-            display:none;flex-direction:column;z-index:9998;overflow:hidden;">
-  <div style="background:#0d6efd;color:#fff;padding:12px 16px;font-weight:600;font-size:15px;
-              display:flex;align-items:center;justify-content:space-between;">
-    <span>🤖 BuyMe Assistant</span>
-    <span onclick="toggleChat()" style="cursor:pointer;font-size:18px;">&times;</span>
-  </div>
-  <div id="chat-messages" style="flex:1;overflow-y:auto;padding:12px;min-height:200px;max-height:320px;
-                                  display:flex;flex-direction:column;gap:8px;">
-    <div style="background:#f0f0f0;border-radius:8px;padding:8px 12px;font-size:13px;max-width:90%;">
-      Hi! I'm the BuyMe Assistant. Ask me about listings, how bidding works, or anything else! 👋
+
+<button
+    id="chatbot-btn"
+    class="chatbot-launcher"
+    onclick="toggleChat()"
+    title="Open BuyMe Assistant"
+    aria-label="Open BuyMe Assistant"
+>
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path
+            d="M21 12a8.5 8.5 0 0 1-9 8.48A9.6 9.6 0 0 1 8 19.6L3 21l1.4-4A8.5 8.5 0 1 1 21 12Z"
+        />
+        <circle cx="8.5" cy="12" r="1"/>
+        <circle cx="12" cy="12" r="1"/>
+        <circle cx="15.5" cy="12" r="1"/>
+    </svg>
+</button>
+
+
+<div
+    id="chatbot-box"
+    class="chatbot-window"
+>
+
+    <div class="chatbot-header">
+
+        <div class="chatbot-heading">
+
+            <span class="assistant-avatar">
+                B
+            </span>
+
+            <div>
+                <strong>BuyMe Assistant</strong>
+                <small>Marketplace help</small>
+            </div>
+
+        </div>
+
+        <button
+            class="chat-close"
+            onclick="toggleChat()"
+            aria-label="Close chatbot"
+        >
+            &times;
+        </button>
+
     </div>
-  </div>
-  <div style="padding:10px;border-top:1px solid #eee;display:flex;gap:6px;">
-    <input id="chat-input" type="text" placeholder="Ask anything…"
-           style="flex:1;border:1px solid #ddd;border-radius:6px;padding:6px 10px;font-size:13px;"
-           onkeydown="if(event.key==='Enter')sendChat()">
-    <button onclick="sendChat()"
-            style="background:#0d6efd;color:#fff;border:none;border-radius:6px;padding:6px 14px;
-                   font-size:13px;cursor:pointer;">Send</button>
-  </div>
+
+    <div
+        id="chat-messages"
+        class="chat-messages"
+    >
+        <div class="chat-message bot-message">
+            Hi! I can help with bidding, listings, alerts,
+            reserve prices and how BuyMe works.
+        </div>
+    </div>
+
+    <div class="chat-input-row">
+
+        <input
+            id="chat-input"
+            type="text"
+            placeholder="Ask about BuyMe..."
+            onkeydown="if(event.key==='Enter') sendChat()"
+        >
+
+        <button
+            onclick="sendChat()"
+            class="chat-send"
+        >
+            Send
+        </button>
+
+    </div>
+
 </div>
+
+
 <script>
 let chatOpen = false;
+
 function toggleChat() {
-  chatOpen = !chatOpen;
-  const box = document.getElementById('chatbot-box');
-  box.style.display = chatOpen ? 'flex' : 'none';
-  if (chatOpen) document.getElementById('chat-input').focus();
+    chatOpen = !chatOpen;
+
+    const box = document.getElementById("chatbot-box");
+
+    box.style.display = chatOpen
+        ? "flex"
+        : "none";
+
+    if (chatOpen) {
+        document
+            .getElementById("chat-input")
+            .focus();
+    }
 }
+
+
 function appendMsg(text, isUser) {
-  const el = document.createElement('div');
-  el.style.cssText = `background:${isUser ? '#0d6efd' : '#f0f0f0'};color:${isUser ? '#fff' : '#333'};
-    border-radius:8px;padding:8px 12px;font-size:13px;max-width:90%;
-    align-self:${isUser ? 'flex-end' : 'flex-start'};`;
-  el.textContent = text;
-  const msgs = document.getElementById('chat-messages');
-  msgs.appendChild(el);
-  msgs.scrollTop = msgs.scrollHeight;
+
+    const message = document.createElement("div");
+
+    message.className =
+        "chat-message "
+        + (isUser
+            ? "user-message"
+            : "bot-message");
+
+    message.textContent = text;
+
+    const messages =
+        document.getElementById("chat-messages");
+
+    messages.appendChild(message);
+
+    messages.scrollTop =
+        messages.scrollHeight;
 }
+
+
 async function sendChat() {
-  const input = document.getElementById('chat-input');
-  const msg = input.value.trim();
-  if (!msg) return;
-  input.value = '';
-  appendMsg(msg, true);
-  appendMsg('Thinking…', false);
-  try {
-    const resp = await fetch('/api/chatbot', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({message: msg})
-    });
-    const data = await resp.json();
-    const msgs = document.getElementById('chat-messages');
-    msgs.removeChild(msgs.lastChild); // remove "Thinking…"
-    appendMsg(data.reply, false);
-  } catch(e) {
-    const msgs = document.getElementById('chat-messages');
-    msgs.removeChild(msgs.lastChild);
-    appendMsg('Sorry, something went wrong. Please try again.', false);
-  }
+
+    const input =
+        document.getElementById("chat-input");
+
+    const msg =
+        input.value.trim();
+
+    if (!msg) {
+        return;
+    }
+
+    input.value = "";
+
+    appendMsg(
+        msg,
+        true
+    );
+
+    appendMsg(
+        "Thinking...",
+        false
+    );
+
+    try {
+
+        const response =
+            await fetch(
+                "/api/chatbot",
+                {
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body: JSON.stringify({
+                        message: msg
+                    })
+                }
+            );
+
+        const data =
+            await response.json();
+
+        const messages =
+            document.getElementById(
+                "chat-messages"
+            );
+
+        messages.removeChild(
+            messages.lastChild
+        );
+
+        appendMsg(
+            data.reply,
+            false
+        );
+
+    } catch (error) {
+
+        const messages =
+            document.getElementById(
+                "chat-messages"
+            );
+
+        messages.removeChild(
+            messages.lastChild
+        );
+
+        appendMsg(
+            "Sorry, something went wrong. Please try again.",
+            false
+        );
+    }
 }
 </script>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+
+<script
+    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
+></script>
+
+<script
+    src="{{ url_for('static', filename='js/main.js') }}"
+></script>
+
 {% block scripts %}{% endblock %}
+
 </body>
 </html>

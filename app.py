@@ -7,11 +7,10 @@ import os
 import json
 import re
 from sqlalchemy.orm import aliased
+from config import Config
 
 app = Flask(__name__)
-app.secret_key = 'buyme-secret-key-change-in-prod'
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('BUYME_DATABASE_URI', 'sqlite:///buyme.db')
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config.from_object(Config)
 
 db = SQLAlchemy(app)
 
@@ -154,25 +153,63 @@ class SupportQuestion(db.Model):
 # AUTH DECORATORS
 # ─────────────────────────────────────────
 
+def get_current_user():
+    """Return the active database user associated with this session."""
+    user_id = session.get("user_id")
+
+    if not user_id:
+        return None
+
+    user = db.session.get(User, user_id)
+
+    if user is None or not user.is_active:
+        session.clear()
+        return None
+
+    return user
+
+
 def login_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
-        if 'user_id' not in session:
-            flash('Please log in first.', 'warning')
-            return redirect(url_for('login'))
+        user = get_current_user()
+
+        if user is None:
+            flash("Please log in first.", "warning")
+            return redirect(url_for("login"))
+
         return f(*args, **kwargs)
+
     return decorated
+
 
 def role_required(*roles):
     def decorator(f):
         @wraps(f)
         def decorated(*args, **kwargs):
-            if session.get('role') not in roles:
-                flash('Access denied.', 'danger')
-                return redirect(url_for('index'))
+            user = get_current_user()
+
+            if user is None:
+                flash("Please log in first.", "warning")
+                return redirect(url_for("login"))
+
+            if user.role not in roles:
+                flash("Access denied.", "danger")
+                return redirect(url_for("index"))
+
             return f(*args, **kwargs)
+
         return decorated
+
     return decorator
+
+
+@app.context_processor
+def inject_current_user():
+    """Expose the authenticated user safely to Jinja templates."""
+    return {
+        "current_user": get_current_user()
+    }
 
 
 # ─────────────────────────────────────────
@@ -222,66 +259,6 @@ def notify_outbid_buyers(item, new_bid):
             message=(f'A higher bid was placed on "{item.title}". '
                      f'Current price is ${float(item.current_price):.2f}.')
         ))
-
-
-def process_auto_bids(item, new_bid):
-    """After a manual bid, trigger auto-bids from other bidders."""
-    auto_bidders = (
-        Bid.query
-        .filter(Bid.item_id == item.item_id,
-                Bid.auto_bid_limit != None,
-                Bid.bidder_id != new_bid.bidder_id)
-        .order_by(Bid.auto_bid_limit.desc())
-        .all()
-    )
-    for ab in auto_bidders:
-        next_amount = float(item.current_price) + float(item.bid_increment)
-        if float(ab.auto_bid_limit) >= next_amount:
-            auto = Bid(
-                item_id=item.item_id,
-                bidder_id=ab.bidder_id,
-                amount=next_amount,
-                is_auto=True
-            )
-            item.current_price = next_amount
-            db.session.add(auto)
-            db.session.commit()
-            break
-        else:
-            # Auto-bid limit exceeded — notify this bidder
-            msg = (f"You've been outbid on \"{item.title}\"! "
-                   f"Current price ${float(item.current_price):.2f} exceeds your "
-                   f"auto-bid limit of ${float(ab.auto_bid_limit):.2f}.")
-            notif = OutbidNotification(
-                user_id=ab.bidder_id,
-                item_id=item.item_id,
-                message=msg
-            )
-            db.session.add(notif)
-    db.session.commit()
-
-    # Also notify the manual bidder's previous leading bid if they set no auto limit
-    prev_leaders = (
-        Bid.query
-        .filter(Bid.item_id == item.item_id,
-                Bid.bidder_id != new_bid.bidder_id,
-                Bid.auto_bid_limit == None)
-        .order_by(Bid.placed_at.desc())
-        .all()
-    )
-    seen = set()
-    for pb in prev_leaders:
-        if pb.bidder_id not in seen:
-            seen.add(pb.bidder_id)
-            msg = (f"You've been outbid on \"{item.title}\"! "
-                   f"New price: ${float(new_bid.amount):.2f}.")
-            notif = OutbidNotification(
-                user_id=pb.bidder_id,
-                item_id=item.item_id,
-                message=msg
-            )
-            db.session.add(notif)
-    db.session.commit()
 
 
 def process_auto_bids(item, new_bid):
@@ -526,7 +503,7 @@ def register():
             return redirect(url_for('register'))
 
         user = User(username=username, email=email,
-                    password=generate_password_hash(password))
+                    password=generate_password_hash(password, method="pbkdf2:sha256"))
         db.session.add(user)
         db.session.commit()
         flash('Account created! Please log in.', 'success')
@@ -542,9 +519,10 @@ def login():
         user = User.query.filter_by(username=username).first()
 
         if user and user.is_active and check_password_hash(user.password, password):
-            session['user_id']  = user.user_id
-            session['username'] = user.username
-            session['role']     = user.role
+            session.clear()
+            session.permanent = True
+            session["user_id"] = user.user_id
+            session["username"] = user.username
             flash(f'Welcome back, {user.username}!', 'success')
             return redirect(url_for('index'))
         flash('Invalid credentials.', 'danger')
@@ -710,9 +688,17 @@ def new_item():
 @login_required
 def cancel_item(item_id):
     item = Item.query.get_or_404(item_id)
-    if item.seller_id != session['user_id'] and session['role'] not in ('admin', 'customer_rep'):
-        flash('Not authorized.', 'danger')
-        return redirect(url_for('item_detail', item_id=item_id))
+    current_user = get_current_user()
+
+    if (
+        current_user is None
+        or (
+            item.seller_id != current_user.user_id
+            and current_user.role not in ("admin", "customer_rep")
+        )
+    ):
+        flash("Not authorized.", "danger")
+        return redirect(url_for("item_detail", item_id=item_id))
     item.status = 'cancelled'
     db.session.commit()
     flash('Auction cancelled.', 'info')
@@ -870,7 +856,7 @@ def rep_edit_user(user_id):
         user.username = request.form['username'].strip()
         user.email    = request.form['email'].strip()
         if request.form.get('new_password'):
-            user.password = generate_password_hash(request.form['new_password'])
+            user.password = generate_password_hash(request.form["new_password"], method="pbkdf2:sha256")
         db.session.commit()
         flash('User updated.', 'success')
         return redirect(url_for('rep_dashboard'))
@@ -999,7 +985,7 @@ def admin_create_rep():
     rep = User(
         username   = username,
         email      = email,
-        password   = generate_password_hash(password),
+        password   = generate_password_hash(password, method="pbkdf2:sha256"),
         role       = 'customer_rep',
         created_by = session['user_id']
     )
@@ -1203,17 +1189,17 @@ def seed_data():
     # ── Seed users only if fresh ─────────────────────────────────
     if fresh:
         admin = User(username='admin', email='admin@buyme.com',
-                     password=generate_password_hash('admin123'), role='admin')
+                     password=generate_password_hash("admin123", method="pbkdf2:sha256"), role='admin')
         rep1 = User(username='support_rep', email='rep@buyme.com',
-                    password=generate_password_hash('rep123'), role='customer_rep')
+                    password=generate_password_hash("rep123", method="pbkdf2:sha256"), role='customer_rep')
         seller1 = User(username='techseller', email='tech@buyme.com',
-                       password=generate_password_hash('pass123'), role='buyer_seller')
+                       password=generate_password_hash("pass123", method="pbkdf2:sha256"), role='buyer_seller')
         seller2 = User(username='gadgetguru', email='gadget@buyme.com',
-                       password=generate_password_hash('pass123'), role='buyer_seller')
+                       password=generate_password_hash("pass123", method="pbkdf2:sha256"), role='buyer_seller')
         seller3 = User(username='vintagefinds', email='vintage@buyme.com',
-                       password=generate_password_hash('pass123'), role='buyer_seller')
+                       password=generate_password_hash("pass123", method="pbkdf2:sha256"), role='buyer_seller')
         seller4 = User(username='sportsgear', email='sports@buyme.com',
-                       password=generate_password_hash('pass123'), role='buyer_seller')
+                       password=generate_password_hash("pass123", method="pbkdf2:sha256"), role='buyer_seller')
         db.session.add_all([admin, rep1, seller1, seller2, seller3, seller4])
         db.session.flush()
     else:
@@ -1222,7 +1208,7 @@ def seed_data():
             u = User.query.filter_by(username=username).first()
             if not u:
                 u = User(username=username, email=email,
-                         password=generate_password_hash(password), role=role)
+                         password=generate_password_hash(password, method="pbkdf2:sha256"), role=role)
                 db.session.add(u)
                 db.session.flush()
             return u

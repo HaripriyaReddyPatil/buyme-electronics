@@ -103,7 +103,7 @@
           {% endif %}
         {% endif %}
 
-        {% if session.role in ('customer_rep', 'admin') and item.status == 'active' %}
+        {% if current_user and current_user.role in ('customer_rep', 'admin') and item.status == 'active' %}
         <form action="{{ url_for('rep_remove_item', item_id=item.item_id) }}" method="post" class="mt-2">
           <button type="submit" class="btn btn-outline-danger btn-sm w-100"
                   onclick="return confirm('Remove this auction?')">Rep: Remove Auction</button>
@@ -134,7 +134,7 @@
 <table class="table table-sm">
   <thead class="table-light">
     <tr><th>Bidder</th><th>Amount</th><th>Time</th><th>Type</th>
-      {% if session.role in ('customer_rep', 'admin') %}<th>Action</th>{% endif %}
+      {% if current_user and current_user.role in ('customer_rep', 'admin') %}<th>Action</th>{% endif %}
     </tr>
   </thead>
   <tbody>
@@ -150,7 +150,7 @@
       <td>${{ "%.2f"|format(bid.amount) }}</td>
       <td>{{ bid.placed_at.strftime('%b %d %H:%M') }}</td>
       <td>{% if bid.is_auto %}<span class="badge bg-info text-dark">auto</span>{% else %}manual{% endif %}</td>
-      {% if session.role in ('customer_rep', 'admin') %}
+      {% if current_user and current_user.role in ('customer_rep', 'admin') %}
       <td>
         <form action="{{ url_for('rep_remove_bid', bid_id=bid.bid_id) }}" method="post" class="d-inline">
           <button type="submit" class="btn btn-link btn-sm text-danger p-0"
