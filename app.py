@@ -69,105 +69,9 @@ from services import (
 # PUBLIC ROUTES
 # ─────────────────────────────────────────
 
-@app.route('/')
-def index():
-    close_expired_auctions()
-    items = Item.query.filter_by(status='active').order_by(Item.end_time.asc()).limit(12).all()
-    categories = Category.query.filter_by(parent_id=None).all()
-    return render_template('index.html', items=items, categories=categories)
+from routes.public import public_bp
 
-
-@app.route('/search')
-def search():
-    close_expired_auctions()
-    q          = request.args.get('q', '')
-    cat_id     = request.args.get('category', type=int)
-    min_price  = request.args.get('min_price', type=float)
-    max_price  = request.args.get('max_price', type=float)
-    sort       = request.args.get('sort', 'end_asc')
-    attr_filters = {
-        key[5:]: value.strip()
-        for key, value in request.args.items()
-        if key.startswith('attr_') and value.strip()
-    }
-
-    query = Item.query.filter_by(status='active')
-
-    if q:
-        query = query.filter(Item.title.ilike(f'%{q}%') | Item.description.ilike(f'%{q}%'))
-    if cat_id:
-        # include subcategories
-        cat_ids = get_descendant_ids(cat_id)
-        query = query.filter(Item.category_id.in_(cat_ids))
-    if min_price is not None:
-        query = query.filter(Item.current_price >= min_price)
-    if max_price is not None:
-        query = query.filter(Item.current_price <= max_price)
-    for attr_name, attr_value in attr_filters.items():
-        attr_alias = aliased(ItemAttribute)
-        query = (
-            query
-            .join(attr_alias, attr_alias.item_id == Item.item_id)
-            .filter(attr_alias.attr_name == attr_name,
-                    attr_alias.attr_value.ilike(f'%{attr_value}%'))
-        )
-
-    if sort == 'end_asc':
-        query = query.order_by(Item.end_time.asc())
-    elif sort == 'price_asc':
-        query = query.order_by(Item.current_price.asc())
-    elif sort == 'price_desc':
-        query = query.order_by(Item.current_price.desc())
-    elif sort == 'newest':
-        query = query.order_by(Item.created_at.desc())
-
-    items = query.all()
-    categories = Category.query.filter_by(parent_id=None).all()
-    selected_category = db.session.get(Category, cat_id) if cat_id else None
-    search_attributes = selected_category.attributes if selected_category and selected_category.attributes else []
-    return render_template('search.html', items=items, categories=categories,
-                           q=q, cat_id=cat_id, sort=sort,
-                           search_attributes=search_attributes,
-                           attr_filters=attr_filters)
-
-@app.route('/item/<int:item_id>')
-def item_detail(item_id):
-    close_expired_auctions()
-    item = db.get_or_404(Item, item_id)
-    bids = Bid.query.filter_by(item_id=item_id).order_by(Bid.placed_at.desc()).all()
-
-    # Similar items: same category, active, within preceding month, not this item
-    one_month_ago = datetime.utcnow() - timedelta(days=30)
-    similar = (Item.query
-               .filter(Item.category_id == item.category_id,
-                       Item.status == 'active',
-                       Item.item_id != item_id,
-                       Item.created_at >= one_month_ago)
-               .limit(4).all())
-
-    return render_template('item_detail.html', item=item, bids=bids, similar=similar)
-
-
-@app.route('/user/<int:user_id>')
-def user_history(user_id):
-    close_expired_auctions()
-    user = db.get_or_404(User, user_id)
-    selling_items = Item.query.filter_by(seller_id=user.user_id).order_by(Item.created_at.desc()).all()
-    bid_item_ids = (
-        db.session.query(Bid.item_id)
-        .filter(Bid.bidder_id == user.user_id)
-        .distinct()
-        .subquery()
-    )
-    bidding_items = (
-        Item.query
-        .join(bid_item_ids, Item.item_id == bid_item_ids.c.item_id)
-        .order_by(Item.created_at.desc())
-        .all()
-    )
-    return render_template('user_history.html', viewed_user=user,
-                           selling_items=selling_items,
-                           bidding_items=bidding_items)
+app.register_blueprint(public_bp)
 
 
 # ─────────────────────────────────────────
@@ -210,7 +114,7 @@ def login():
             session["user_id"] = user.user_id
             session["username"] = user.username
             flash(f'Welcome back, {user.username}!', 'success')
-            return redirect(url_for('index'))
+            return redirect(url_for('public.index'))
         flash('Invalid credentials.', 'danger')
     return render_template('login.html')
 
@@ -219,7 +123,7 @@ def login():
 def logout():
     session.clear()
     flash('Logged out.', 'info')
-    return redirect(url_for('index'))
+    return redirect(url_for('public.index'))
 
 
 @app.route('/profile')
@@ -294,7 +198,7 @@ def delete_account():
     db.session.commit()
     session.clear()
     flash('Account deactivated.', 'info')
-    return redirect(url_for('index'))
+    return redirect(url_for('public.index'))
 
 
 # ─────────────────────────────────────────
@@ -365,7 +269,7 @@ def new_item():
         fire_alerts(item)
 
         flash('Auction listed!', 'success')
-        return redirect(url_for('item_detail', item_id=item.item_id))
+        return redirect(url_for('public.item_detail', item_id=item.item_id))
 
     return render_template('new_item.html', categories=categories)
 
@@ -384,7 +288,7 @@ def cancel_item(item_id):
         )
     ):
         flash("Not authorized.", "danger")
-        return redirect(url_for("item_detail", item_id=item_id))
+        return redirect(url_for("public.item_detail", item_id=item_id))
     item.status = 'cancelled'
     db.session.commit()
     flash('Auction cancelled.', 'info')
@@ -402,22 +306,22 @@ def place_bid(item_id):
 
     if item.status != 'active':
         flash('This auction is no longer active.', 'danger')
-        return redirect(url_for('item_detail', item_id=item_id))
+        return redirect(url_for('public.item_detail', item_id=item_id))
     if item.seller_id == session['user_id']:
         flash('You cannot bid on your own item.', 'danger')
-        return redirect(url_for('item_detail', item_id=item_id))
+        return redirect(url_for('public.item_detail', item_id=item_id))
 
     bid_amount     = float(request.form['bid_amount'])
     auto_bid_limit = request.form.get('auto_bid_limit')
     auto_bid_limit = float(auto_bid_limit) if auto_bid_limit else None
     if auto_bid_limit is not None and auto_bid_limit < bid_amount:
         flash('Auto-bid limit must be at least your current bid.', 'danger')
-        return redirect(url_for('item_detail', item_id=item_id))
+        return redirect(url_for('public.item_detail', item_id=item_id))
 
     min_valid = float(item.current_price) + float(item.bid_increment)
     if bid_amount < min_valid:
         flash(f'Bid must be at least ${min_valid:.2f}.', 'danger')
-        return redirect(url_for('item_detail', item_id=item_id))
+        return redirect(url_for('public.item_detail', item_id=item_id))
 
     bid = Bid(
         item_id        = item_id,
@@ -437,7 +341,7 @@ def place_bid(item_id):
     db.session.commit()
 
     flash('Bid placed!', 'success')
-    return redirect(url_for('item_detail', item_id=item_id))
+    return redirect(url_for('public.item_detail', item_id=item_id))
 
 
 # ─────────────────────────────────────────
@@ -561,7 +465,7 @@ def rep_remove_bid(bid_id):
     item.current_price = top.amount if top else item.start_price
     db.session.commit()
     flash('Bid removed.', 'info')
-    return redirect(url_for('item_detail', item_id=item.item_id))
+    return redirect(url_for('public.item_detail', item_id=item.item_id))
 
 
 @app.route('/rep/item/<int:item_id>/remove', methods=['POST'])

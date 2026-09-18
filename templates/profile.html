@@ -30,7 +30,7 @@
       <tbody>
         {% for item in my_items %}
         <tr>
-          <td><a href="{{ url_for('item_detail', item_id=item.item_id) }}">{{ item.title }}</a></td>
+          <td><a href="{{ url_for('public.item_detail', item_id=item.item_id) }}">{{ item.title }}</a></td>
           <td>{{ item.category.name }}</td>
           <td>${{ "%.2f"|format(item.display_price) }}</td>
           <td>{{ item.bids|length }}</td>
@@ -52,7 +52,7 @@
       <tbody>
         {% for bid in my_bids %}
         <tr>
-          <td><a href="{{ url_for('item_detail', item_id=bid.item_id) }}">{{ bid.item.title }}</a></td>
+          <td><a href="{{ url_for('public.item_detail', item_id=bid.item_id) }}">{{ bid.item.title }}</a></td>
           <td>${{ "%.2f"|format(bid.amount) }}</td>
           <td>{% if bid.is_auto %}<span class="badge bg-info text-dark">auto</span>{% else %}manual{% endif %}</td>
           <td>{{ bid.placed_at.strftime('%b %d %H:%M') }}</td>
@@ -129,7 +129,7 @@
             {% set hits = (alert.attr_filters or {}).get('hits', []) %}
             {% if hits %}
               {% for hit in hits[-3:] %}
-                <a href="{{ url_for('item_detail', item_id=hit.item_id) }}" class="badge bg-info text-dark text-decoration-none me-1">
+                <a href="{{ url_for('public.item_detail', item_id=hit.item_id) }}" class="badge bg-info text-dark text-decoration-none me-1">
                   {{ hit.title[:30] }}{% if hit.title|length > 30 %}…{% endif %}
                 </a>
               {% endfor %}
@@ -165,7 +165,7 @@
           <span>{{ notif.message }}</span>
           <small class="text-muted ms-3 text-nowrap">{{ notif.created_at.strftime('%b %d %H:%M') }}</small>
         </div>
-        <a href="{{ url_for('item_detail', item_id=notif.item_id) }}" class="small text-primary">View item →</a>
+        <a href="{{ url_for('public.item_detail', item_id=notif.item_id) }}" class="small text-primary">View item →</a>
       </div>
       {% endfor %}
     </div>

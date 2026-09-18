@@ -4,8 +4,8 @@
 
 <nav aria-label="breadcrumb" class="mb-3">
   <ol class="breadcrumb">
-    <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Home</a></li>
-    <li class="breadcrumb-item"><a href="{{ url_for('search', category=item.category_id) }}">{{ item.category.name }}</a></li>
+    <li class="breadcrumb-item"><a href="{{ url_for('public.index') }}">Home</a></li>
+    <li class="breadcrumb-item"><a href="{{ url_for('public.search', category=item.category_id) }}">{{ item.category.name }}</a></li>
     <li class="breadcrumb-item active">{{ item.title }}</li>
   </ol>
 </nav>
@@ -21,7 +21,7 @@
       Category: <strong>{{ item.category.name }}</strong>
       {% if item.category.parent %}/ {{ item.category.parent.name }}{% endif %}
       &nbsp;|&nbsp; Seller:
-      <strong><a href="{{ url_for('user_history', user_id=item.seller_id) }}" class="text-decoration-none">{{ item.seller.username }}</a></strong>
+      <strong><a href="{{ url_for('public.user_history', user_id=item.seller_id) }}" class="text-decoration-none">{{ item.seller.username }}</a></strong>
     </p>
 
     <hr>
@@ -144,7 +144,7 @@
         {% if bid.bidder.is_anonymous and bid.bidder_id != session.user_id %}
           Anonymous
         {% else %}
-          <a href="{{ url_for('user_history', user_id=bid.bidder_id) }}" class="text-decoration-none">{{ bid.bidder.username }}</a>
+          <a href="{{ url_for('public.user_history', user_id=bid.bidder_id) }}" class="text-decoration-none">{{ bid.bidder.username }}</a>
         {% endif %}
       </td>
       <td>${{ "%.2f"|format(bid.amount) }}</td>
@@ -178,7 +178,7 @@
            style="height:110px;object-fit:cover;">
       {% endif %}
       <div class="card-body">
-        <h6><a href="{{ url_for('item_detail', item_id=s.item_id) }}" class="text-decoration-none">{{ s.title }}</a></h6>
+        <h6><a href="{{ url_for('public.item_detail', item_id=s.item_id) }}" class="text-decoration-none">{{ s.title }}</a></h6>
         <span class="text-primary fw-bold">${{ "%.2f"|format(s.display_price) }}</span>
       </div>
     </div>

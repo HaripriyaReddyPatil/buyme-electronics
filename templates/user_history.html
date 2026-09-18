@@ -14,7 +14,7 @@
       <tbody>
         {% for item in selling_items %}
         <tr>
-          <td><a href="{{ url_for('item_detail', item_id=item.item_id) }}">{{ item.title }}</a></td>
+          <td><a href="{{ url_for('public.item_detail', item_id=item.item_id) }}">{{ item.title }}</a></td>
           <td>{{ item.category.name }}</td>
           <td>${{ "%.2f"|format(item.display_price) }}</td>
           <td>{{ item.status }}</td>
@@ -35,7 +35,7 @@
       <tbody>
         {% for item in bidding_items %}
         <tr>
-          <td><a href="{{ url_for('item_detail', item_id=item.item_id) }}">{{ item.title }}</a></td>
+          <td><a href="{{ url_for('public.item_detail', item_id=item.item_id) }}">{{ item.title }}</a></td>
           <td>{{ item.category.name }}</td>
           <td>${{ "%.2f"|format(item.display_price) }}</td>
           <td>{{ item.status }}</td>

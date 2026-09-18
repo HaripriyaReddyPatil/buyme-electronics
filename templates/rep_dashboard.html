@@ -82,7 +82,7 @@
       <tbody>
         {% for item in flagged_items %}
         <tr>
-          <td><a href="{{ url_for('item_detail', item_id=item.item_id) }}">{{ item.title }}</a></td>
+          <td><a href="{{ url_for('public.item_detail', item_id=item.item_id) }}">{{ item.title }}</a></td>
           <td>{{ item.seller.username }}</td>
           <td>${{ "%.2f"|format(item.display_price) }}</td>
           <td>{{ item.bids|length }}</td>
