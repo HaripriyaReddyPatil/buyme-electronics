@@ -1,6 +1,8 @@
 import pytest
 
-from app import app, db, User, Item
+from app import app
+from extensions import db
+from models import User, Item
 
 
 @pytest.fixture()
