@@ -428,7 +428,7 @@ def search():
 
     items = query.all()
     categories = Category.query.filter_by(parent_id=None).all()
-    selected_category = Category.query.get(cat_id) if cat_id else None
+    selected_category = db.session.get(Category, cat_id) if cat_id else None
     search_attributes = selected_category.attributes if selected_category and selected_category.attributes else []
     return render_template('search.html', items=items, categories=categories,
                            q=q, cat_id=cat_id, sort=sort,
@@ -447,7 +447,7 @@ def get_descendant_ids(category_id):
 @app.route('/item/<int:item_id>')
 def item_detail(item_id):
     close_expired_auctions()
-    item = Item.query.get_or_404(item_id)
+    item = db.get_or_404(Item, item_id)
     bids = Bid.query.filter_by(item_id=item_id).order_by(Bid.placed_at.desc()).all()
 
     # Similar items: same category, active, within preceding month, not this item
@@ -465,7 +465,7 @@ def item_detail(item_id):
 @app.route('/user/<int:user_id>')
 def user_history(user_id):
     close_expired_auctions()
-    user = User.query.get_or_404(user_id)
+    user = db.get_or_404(User, user_id)
     selling_items = Item.query.filter_by(seller_id=user.user_id).order_by(Item.created_at.desc()).all()
     bid_item_ids = (
         db.session.query(Bid.item_id)
@@ -539,7 +539,7 @@ def logout():
 @app.route('/profile')
 @login_required
 def profile():
-    user = User.query.get(session['user_id'])
+    user = db.session.get(User, session['user_id'])
     my_items = Item.query.filter_by(seller_id=user.user_id).order_by(Item.created_at.desc()).all()
     my_bids  = Bid.query.filter_by(bidder_id=user.user_id).order_by(Bid.placed_at.desc()).all()
     my_alerts = Alert.query.filter_by(user_id=user.user_id).all()
@@ -560,7 +560,7 @@ def profile():
 @app.route('/toggle_anonymous', methods=['POST'])
 @login_required
 def toggle_anonymous():
-    user = User.query.get(session['user_id'])
+    user = db.session.get(User, session['user_id'])
     user.is_anonymous = not user.is_anonymous
     db.session.commit()
     state = "enabled" if user.is_anonymous else "disabled"
@@ -579,7 +579,7 @@ def mark_notifications_read():
 @app.route('/support')
 @login_required
 def support():
-    user = User.query.get(session['user_id'])
+    user = db.session.get(User, session['user_id'])
     my_questions = SupportQuestion.query.filter_by(user_id=user.user_id).order_by(
         SupportQuestion.created_at.desc()).all()
     return render_template('support.html', user=user, my_questions=my_questions)
@@ -603,7 +603,7 @@ def questions():
 @app.route('/delete_account', methods=['POST'])
 @login_required
 def delete_account():
-    user = User.query.get(session['user_id'])
+    user = db.session.get(User, session['user_id'])
     user.is_active = False
     db.session.commit()
     session.clear()
@@ -621,7 +621,7 @@ def new_item():
     categories = Category.query.all()
     if request.method == 'POST':
         cat_id = int(request.form['category_id'])
-        category = Category.query.get(cat_id)
+        category = db.session.get(Category, cat_id)
         if not category or not category.attributes:
             flash('Please choose a specific Electronics subcategory.', 'danger')
             return redirect(url_for('new_item'))
@@ -687,7 +687,7 @@ def new_item():
 @app.route('/item/<int:item_id>/cancel', methods=['POST'])
 @login_required
 def cancel_item(item_id):
-    item = Item.query.get_or_404(item_id)
+    item = db.get_or_404(Item, item_id)
     current_user = get_current_user()
 
     if (
@@ -712,7 +712,7 @@ def cancel_item(item_id):
 @app.route('/item/<int:item_id>/bid', methods=['POST'])
 @login_required
 def place_bid(item_id):
-    item = Item.query.get_or_404(item_id)
+    item = db.get_or_404(Item, item_id)
 
     if item.status != 'active':
         flash('This auction is no longer active.', 'danger')
@@ -782,7 +782,7 @@ def new_alert():
 @app.route('/alerts/<int:alert_id>/delete', methods=['POST'])
 @login_required
 def delete_alert(alert_id):
-    alert = Alert.query.get_or_404(alert_id)
+    alert = db.get_or_404(Alert, alert_id)
     if alert.user_id != session['user_id']:
         flash('Not authorized.', 'danger')
         return redirect(url_for('profile'))
@@ -833,7 +833,7 @@ def rep_dashboard():
 @login_required
 @role_required('customer_rep', 'admin')
 def rep_answer_question(question_id):
-    question = SupportQuestion.query.get_or_404(question_id)
+    question = db.get_or_404(SupportQuestion, question_id)
     answer = request.form.get('answer', '').strip()
     if not answer:
         flash('Answer cannot be blank.', 'danger')
@@ -851,7 +851,7 @@ def rep_answer_question(question_id):
 @login_required
 @role_required('customer_rep', 'admin')
 def rep_edit_user(user_id):
-    user = User.query.get_or_404(user_id)
+    user = db.get_or_404(User, user_id)
     if request.method == 'POST':
         user.username = request.form['username'].strip()
         user.email    = request.form['email'].strip()
@@ -867,7 +867,7 @@ def rep_edit_user(user_id):
 @login_required
 @role_required('customer_rep', 'admin')
 def rep_remove_bid(bid_id):
-    bid = Bid.query.get_or_404(bid_id)
+    bid = db.get_or_404(Bid, bid_id)
     item = bid.item
     db.session.delete(bid)
     # Recalculate current price
@@ -882,7 +882,7 @@ def rep_remove_bid(bid_id):
 @login_required
 @role_required('customer_rep', 'admin')
 def rep_remove_item(item_id):
-    item = Item.query.get_or_404(item_id)
+    item = db.get_or_404(Item, item_id)
     item.status = 'cancelled'
     db.session.commit()
     flash('Auction removed.', 'info')
@@ -999,7 +999,7 @@ def admin_create_rep():
 @login_required
 @role_required('admin')
 def admin_deactivate_rep(user_id):
-    rep = User.query.get_or_404(user_id)
+    rep = db.get_or_404(User, user_id)
     rep.is_active = False
     db.session.commit()
     flash('Rep deactivated.', 'info')
@@ -1034,7 +1034,7 @@ def admin_create_category():
 @login_required
 @role_required('admin')
 def admin_update_category(category_id):
-    cat = Category.query.get_or_404(category_id)
+    cat = db.get_or_404(Category, category_id)
     cat.description = request.form.get('description', '').strip()
     attrs_raw = request.form.get('attributes', '')
     cat.attributes = [
@@ -1052,7 +1052,7 @@ def admin_update_category(category_id):
 # ─────────────────────────────────────────
 @app.route('/api/categories/<int:cat_id>/attributes')
 def api_category_attributes(cat_id):
-    cat = Category.query.get_or_404(cat_id)
+    cat = db.get_or_404(Category, cat_id)
     return jsonify({'attributes': cat.attributes or []})
 
 
