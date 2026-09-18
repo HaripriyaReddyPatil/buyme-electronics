@@ -99,7 +99,7 @@
 <div class="row g-4 mb-5">
   <div class="col-md-5">
     <h6>Create item type</h6>
-    <form action="{{ url_for('admin_create_category') }}" method="post" class="mb-4">
+    <form action="{{ url_for('admin.admin_create_category') }}" method="post" class="mb-4">
       <div class="mb-2">
         <input type="text" name="name" class="form-control" placeholder="Name, e.g. Tablets" required>
       </div>
@@ -131,7 +131,7 @@
           <td>{{ cat.name }}</td>
           <td>{{ cat.parent.name if cat.parent else '-' }}</td>
           <td>
-            <form action="{{ url_for('admin_update_category', category_id=cat.category_id) }}" method="post" class="d-flex gap-2">
+            <form action="{{ url_for('admin.admin_update_category', category_id=cat.category_id) }}" method="post" class="d-flex gap-2">
               <input type="hidden" name="description" value="{{ cat.description or '' }}">
               <input type="text" name="attributes" class="form-control form-control-sm"
                      value="{{ (cat.attributes or []) | join(', ') }}">
@@ -152,7 +152,7 @@
 <div class="row">
   <div class="col-md-5">
     <h6>Create new rep</h6>
-    <form action="{{ url_for('admin_create_rep') }}" method="post" class="mb-4">
+    <form action="{{ url_for('admin.admin_create_rep') }}" method="post" class="mb-4">
       <div class="mb-2">
         <input type="text" name="username" class="form-control" placeholder="Username" required>
       </div>
@@ -178,7 +178,7 @@
           <td>{% if rep.is_active %}<span class="badge bg-success">Active</span>{% else %}<span class="badge bg-secondary">Inactive</span>{% endif %}</td>
           <td>
             {% if rep.is_active %}
-            <form action="{{ url_for('admin_deactivate_rep', user_id=rep.user_id) }}" method="post">
+            <form action="{{ url_for('admin.admin_deactivate_rep', user_id=rep.user_id) }}" method="post">
               <button type="submit" class="btn btn-outline-danger btn-sm"
                       onclick="return confirm('Deactivate this rep?')">Deactivate</button>
             </form>
