@@ -29,7 +29,7 @@
             {% else %}<span class="badge bg-secondary">Inactive</span>{% endif %}
           </td>
           <td>
-            <a href="{{ url_for('rep_edit_user', user_id=u.user_id) }}"
+            <a href="{{ url_for('rep.rep_edit_user', user_id=u.user_id) }}"
                class="btn btn-outline-secondary btn-sm">Edit</a>
           </td>
         </tr>
@@ -59,7 +59,7 @@
           <strong>Answer:</strong> {{ q.answer }}
         </div>
         {% endif %}
-        <form action="{{ url_for('rep_answer_question', question_id=q.question_id) }}" method="post">
+        <form action="{{ url_for('rep.rep_answer_question', question_id=q.question_id) }}" method="post">
           <div class="input-group input-group-sm">
             <input type="text" name="answer" class="form-control" placeholder="Type an answer" required>
             <button type="submit" class="btn btn-primary">Answer</button>
@@ -88,7 +88,7 @@
           <td>{{ item.bids|length }}</td>
           <td>{{ item.end_time.strftime('%b %d %H:%M') }}</td>
           <td>
-            <form action="{{ url_for('rep_remove_item', item_id=item.item_id) }}" method="post" class="d-inline">
+            <form action="{{ url_for('rep.rep_remove_item', item_id=item.item_id) }}" method="post" class="d-inline">
               <button type="submit" class="btn btn-danger btn-sm"
                       onclick="return confirm('Remove this auction?')">Remove</button>
             </form>

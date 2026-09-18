@@ -4,7 +4,7 @@
 <div class="row justify-content-center">
   <div class="col-md-6">
     <h2 class="fw-bold mb-4">Edit User: {{ user.username }}</h2>
-    <form action="{{ url_for('rep_edit_user', user_id=user.user_id) }}" method="post">
+    <form action="{{ url_for('rep.rep_edit_user', user_id=user.user_id) }}" method="post">
       <div class="mb-3">
         <label class="form-label">Username</label>
         <input type="text" name="username" class="form-control" value="{{ user.username }}" required>
@@ -18,7 +18,7 @@
         <input type="password" name="new_password" class="form-control">
       </div>
       <button type="submit" class="btn btn-primary">Save Changes</button>
-      <a href="{{ url_for('rep_dashboard') }}" class="btn btn-outline-secondary ms-2">Cancel</a>
+      <a href="{{ url_for('rep.rep_dashboard') }}" class="btn btn-outline-secondary ms-2">Cancel</a>
     </form>
   </div>
 </div>

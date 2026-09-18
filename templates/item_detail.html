@@ -104,7 +104,7 @@
         {% endif %}
 
         {% if current_user and current_user.role in ('customer_rep', 'admin') and item.status == 'active' %}
-        <form action="{{ url_for('rep_remove_item', item_id=item.item_id) }}" method="post" class="mt-2">
+        <form action="{{ url_for('rep.rep_remove_item', item_id=item.item_id) }}" method="post" class="mt-2">
           <button type="submit" class="btn btn-outline-danger btn-sm w-100"
                   onclick="return confirm('Remove this auction?')">Rep: Remove Auction</button>
         </form>
@@ -152,7 +152,7 @@
       <td>{% if bid.is_auto %}<span class="badge bg-info text-dark">auto</span>{% else %}manual{% endif %}</td>
       {% if current_user and current_user.role in ('customer_rep', 'admin') %}
       <td>
-        <form action="{{ url_for('rep_remove_bid', bid_id=bid.bid_id) }}" method="post" class="d-inline">
+        <form action="{{ url_for('rep.rep_remove_bid', bid_id=bid.bid_id) }}" method="post" class="d-inline">
           <button type="submit" class="btn btn-link btn-sm text-danger p-0"
                   onclick="return confirm('Remove this bid?')">Remove</button>
         </form>
