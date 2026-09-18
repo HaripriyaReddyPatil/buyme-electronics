@@ -16,6 +16,7 @@ from auth import login_required
 from extensions import db
 from models import (
     Alert,
+    Bid,
     Category,
     Item,
     OutbidNotification,
@@ -198,6 +199,17 @@ def profile():
         .all()
     )
 
+    my_bids = (
+        Bid.query
+        .filter_by(
+            bidder_id=user.user_id
+        )
+        .order_by(
+            Bid.placed_at.desc()
+        )
+        .all()
+    )
+
     my_alerts = (
         Alert.query
         .filter_by(
@@ -246,6 +258,7 @@ def profile():
         "profile.html",
         user=user,
         my_items=my_items,
+        my_bids=my_bids,
         my_alerts=my_alerts,
         my_notifications=my_notifications,
         my_questions=my_questions,
