@@ -101,7 +101,7 @@
                 <li class="nav-item">
                     <a
                         class="nav-link"
-                        href="{{ url_for('questions') }}"
+                        href="{{ url_for('auth_routes.questions') }}"
                     >
                         Q&amp;A
                     </a>
@@ -121,7 +121,7 @@
                     <li class="nav-item">
                         <a
                             class="nav-link"
-                            href="{{ url_for('support') }}"
+                            href="{{ url_for('auth_routes.support') }}"
                         >
                             Support
                         </a>
@@ -170,7 +170,7 @@
                             <li>
                                 <a
                                     class="dropdown-item"
-                                    href="{{ url_for('profile') }}"
+                                    href="{{ url_for('auth_routes.profile') }}"
                                 >
                                     My profile
                                 </a>
@@ -192,7 +192,7 @@
                             <li>
                                 <a
                                     class="dropdown-item text-danger"
-                                    href="{{ url_for('logout') }}"
+                                    href="{{ url_for('auth_routes.logout') }}"
                                 >
                                     Log out
                                 </a>
@@ -206,7 +206,7 @@
                     <li class="nav-item">
                         <a
                             class="nav-link"
-                            href="{{ url_for('login') }}"
+                            href="{{ url_for('auth_routes.login') }}"
                         >
                             Log in
                         </a>
@@ -215,7 +215,7 @@
                     <li class="nav-item">
                         <a
                             class="btn navbar-register"
-                            href="{{ url_for('register') }}"
+                            href="{{ url_for('auth_routes.register') }}"
                         >
                             Create account
                         </a>

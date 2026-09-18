@@ -5,7 +5,7 @@
 <h2 class="fw-bold mb-1">Questions and Answers</h2>
 <p class="text-muted">Browse answered support questions or search by keyword.</p>
 
-<form action="{{ url_for('questions') }}" method="get" class="row g-2 mb-4">
+<form action="{{ url_for('auth_routes.questions') }}" method="get" class="row g-2 mb-4">
   <div class="col-md-8">
     <input type="search" name="q" class="form-control" value="{{ q }}" placeholder="Search questions, answers, bidding, accounts...">
   </div>
@@ -13,7 +13,7 @@
     <button type="submit" class="btn btn-primary w-100">Search</button>
   </div>
   <div class="col-md-2">
-    <a href="{{ url_for('questions') }}" class="btn btn-outline-secondary w-100">Clear</a>
+    <a href="{{ url_for('auth_routes.questions') }}" class="btn btn-outline-secondary w-100">Clear</a>
   </div>
 </form>
 

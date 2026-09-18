@@ -29,7 +29,7 @@ def login_required(f):
 
         if user is None:
             flash("Please log in first.", "warning")
-            return redirect(url_for("login"))
+            return redirect(url_for("auth_routes.login"))
 
         return f(*args, **kwargs)
 
@@ -44,11 +44,11 @@ def role_required(*roles):
 
             if user is None:
                 flash("Please log in first.", "warning")
-                return redirect(url_for("login"))
+                return redirect(url_for("auth_routes.login"))
 
             if user.role not in roles:
                 flash("Access denied.", "danger")
-                return redirect(url_for("index"))
+                return redirect(url_for("public.index"))
 
             return f(*args, **kwargs)
 

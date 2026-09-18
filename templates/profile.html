@@ -155,7 +155,7 @@
 
   <div class="tab-pane fade" id="myNotifications">
     {% if my_notifications %}
-    <form action="{{ url_for('mark_notifications_read') }}" method="post" class="mb-3">
+    <form action="{{ url_for('auth_routes.mark_notifications_read') }}" method="post" class="mb-3">
       <button type="submit" class="btn btn-outline-secondary btn-sm">Mark all as read</button>
     </form>
     <div class="list-group">
@@ -213,7 +213,7 @@
   <div class="tab-pane fade" id="settings">
     <div class="col-md-6">
       <h6 class="fw-bold mb-3">Privacy</h6>
-      <form action="{{ url_for('toggle_anonymous') }}" method="post" class="mb-4">
+      <form action="{{ url_for('auth_routes.toggle_anonymous') }}" method="post" class="mb-4">
         <div class="d-flex align-items-center gap-3">
           <button type="submit" class="btn {% if user.is_anonymous %}btn-success{% else %}btn-outline-secondary{% endif %}">
             {% if user.is_anonymous %}Anonymous bidding: ON{% else %}Anonymous bidding: OFF{% endif %}
@@ -222,7 +222,7 @@
         </div>
       </form>
       <h6 class="fw-bold">Danger zone</h6>
-      <form action="{{ url_for('delete_account') }}" method="post">
+      <form action="{{ url_for('auth_routes.delete_account') }}" method="post">
         <button type="submit" class="btn btn-outline-danger"
                 onclick="return confirm('Deactivate your account? This cannot be undone.')">
           Deactivate Account

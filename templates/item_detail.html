@@ -92,7 +92,7 @@
           <button type="submit" class="btn btn-primary w-100">Place Bid</button>
         </form>
         {% elif not session.user_id %}
-        <a href="{{ url_for('login') }}" class="btn btn-outline-primary w-100">Log in to bid</a>
+        <a href="{{ url_for('auth_routes.login') }}" class="btn btn-outline-primary w-100">Log in to bid</a>
         {% elif item.seller_id == session.user_id %}
         <div class="alert alert-info mb-0">This is your listing.</div>
           {% if item.status == 'active' %}
