@@ -322,14 +322,29 @@ The repository includes `setup.sql` for database initialization and sample data 
 
 ## Screenshots
 
-Screenshots can be added here to show:
+### Homepage
 
-- Home page
-- Auction listing
-- Search and filtering
-- User dashboard
-- Customer representative dashboard
-- Administrator dashboard
+![BuyMe Homepage](screenshots/homepage.png)
+
+### Auction Detail
+
+![Auction Detail](screenshots/item-detail.png)
+
+### Create Listing
+
+![Create Listing](screenshots/create-listing.png)
+
+### User Profile
+
+![User Profile](screenshots/profile.png)
+
+### Admin Dashboard
+
+![Admin Dashboard](screenshots/admin-dashboard.png)
+
+### Customer Representative Dashboard
+
+![Customer Representative Dashboard](screenshots/rep-dashboard.png)
 
 ## Team Project
 
