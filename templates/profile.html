@@ -23,7 +23,7 @@
 <div class="tab-content">
 
   <div class="tab-pane fade show active" id="myListings">
-    <a href="{{ url_for('new_item') }}" class="btn btn-primary btn-sm mb-3">+ List a new item</a>
+    <a href="{{ url_for('auction.new_item') }}" class="btn btn-primary btn-sm mb-3">+ List a new item</a>
     {% if my_items %}
     <table class="table table-hover">
       <thead class="table-light"><tr><th>Title</th><th>Category</th><th>Price</th><th>Bids</th><th>Status</th><th>Ends</th></tr></thead>
@@ -82,7 +82,7 @@
 
   <div class="tab-pane fade" id="myAlerts">
     <h6 class="fw-bold">Set a new alert</h6>
-    <form action="{{ url_for('new_alert') }}" method="post" class="row g-2 mb-4">
+    <form action="{{ url_for('auction.new_alert') }}" method="post" class="row g-2 mb-4">
       <div class="col-md-4">
         <input type="text" name="keywords" class="form-control" placeholder="Keywords (e.g. iPhone 15)">
       </div>
@@ -140,7 +140,7 @@
           </td>
           <td>{{ alert.created_at.strftime('%b %d') }}</td>
           <td>
-            <form action="{{ url_for('delete_alert', alert_id=alert.alert_id) }}" method="post">
+            <form action="{{ url_for('auction.delete_alert', alert_id=alert.alert_id) }}" method="post">
               <button type="submit" class="btn btn-link btn-sm text-danger p-0">Remove</button>
             </form>
           </td>
@@ -176,7 +176,7 @@
 
   <div class="tab-pane fade" id="support">
     <h6 class="fw-bold">Ask customer support</h6>
-    <form action="{{ url_for('new_support_question') }}" method="post" class="mb-4">
+    <form action="{{ url_for('auction.new_support_question') }}" method="post" class="mb-4">
       <div class="mb-2">
         <input type="text" name="subject" class="form-control" maxlength="160" placeholder="Subject" required>
       </div>

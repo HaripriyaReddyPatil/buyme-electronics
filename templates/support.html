@@ -8,7 +8,7 @@
 <div class="row g-4">
   <div class="col-md-5">
     <h5 class="fw-bold">New question</h5>
-    <form action="{{ url_for('new_support_question') }}" method="post">
+    <form action="{{ url_for('auction.new_support_question') }}" method="post">
       <div class="mb-2">
         <input type="text" name="subject" class="form-control" maxlength="160" placeholder="Subject" required>
       </div>
